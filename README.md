@@ -36,7 +36,7 @@ The app is designed to run on a **shared tablet device** placed at the gym entra
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourname/gym-checkin-kiosk.git
+git clone https://github.com/humake-dev/touch_app.git
 cd gym-checkin-kiosk
 ```
 
