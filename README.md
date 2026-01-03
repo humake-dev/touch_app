@@ -72,7 +72,7 @@ Backend API endpoint 및 키오스크 식별 정보를 설정하세요.
 npx react-native run-android
 ```
 
-> 이 앱은 Android 태블릿 환경을 기준으로 설계되었습니다.
+> 이 앱은 태블릿 환경을 기준으로 설계되었습니다.
 
 ---
 
