@@ -23,29 +23,29 @@ jobs:
           cd ios && pod install
 
       - name: Setup signing
-  env:
-    KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-    IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
-    IOS_CERT_BASE64: ${{ secrets.IOS_CERT_BASE64 }}
-    IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
-  run: |
-    KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
-
-    security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-    security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-    security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-    security list-keychains -d user -s "$KEYCHAIN_PATH"
-
-    echo "$IOS_CERT_BASE64" | base64 --decode > cert.p12
-    security import cert.p12 \
-      -k "$KEYCHAIN_PATH" \
-      -P "$IOS_CERT_PASSWORD" \
-      -T /usr/bin/codesign
-
-    mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-    echo "$IOS_PROVISION_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
-    cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/"
-
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_CERT_BASE64: ${{ secrets.IOS_CERT_BASE64 }}
+          IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
+          
+          
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          
+          echo "$IOS_CERT_BASE64" | base64 --decode > cert.p12
+          security import cert.p12 \
+          -k "$KEYCHAIN_PATH" \
+          -P "$IOS_CERT_PASSWORD" \
+          -T /usr/bin/codesign
+          
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$IOS_PROVISION_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/"
 
       - name: Build archive
         run: |
