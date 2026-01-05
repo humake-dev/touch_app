@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { jwtDecode } from "jwt-decode";
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
@@ -25,12 +25,36 @@ const DEFAULT_LOGIN_URL = Config.API_URL+'/admin_login';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
-  const [hasBranch, setHasBranch] = useState<boolean | null>(null);
+  const [hasBranch, setHasBranch] = useState(false);
 
   useEffect(() => {
     (async () => {
       const branch = await AsyncStorage.getItem(STORAGE_KEY_BRANCH);
-      setHasBranch(!!branch);
+      const token = await AsyncStorage.getItem("accessToken");
+
+      if (!branch || !token) {
+        await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+        setHasBranch(false);
+        setIsReady(true);
+        return;
+      }
+
+      try {
+        const decoded: any = jwtDecode(token);
+        const now = Date.now() / 1000;
+
+        if (decoded.exp < now) {
+          await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+          setHasBranch(false);
+        } else {
+          setHasBranch(true);
+        }
+
+      } catch {
+        await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+        setHasBranch(false);
+      }
+
       setIsReady(true);
     })();
   }, []);
@@ -182,6 +206,7 @@ const onBackspace = () => {
     }
 
     try {
+      console.log(wsUrl);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       setConnectionState('connecting');
@@ -216,29 +241,24 @@ const onBackspace = () => {
   const sendPhone = async (eightDigits: string) => {
     const phone = '010' + eightDigits;
     try {
-      const accessToken = await AsyncStorage.getItem("accessToken");
-
-  const userReq = await fetch(`${API_URL}/users?phone=${phone}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const userRes = await authFetch(`${API_URL}/users?phone=${phone}`, {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
   if (!userRes.ok) {
     Alert.alert('유저 조회 실패', '서버에서 유저 정보를 받아오지 못했습니다.');
     return;
   } 
   
-  user=userRes.json();
+  let user=await userRes.json();
   if (!user) return false;  
-
 
   setUserInfo(user);
 
-  const enrollReq = await fetch(`${API_URL}/enrolls?user_id=${userInfo.id}`, {
+  const enrollRes = await authFetch(`${API_URL}/enrolls?user_id=${user.id}`, {
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
   });
@@ -250,7 +270,10 @@ const onBackspace = () => {
     return;
   }
 
-    enroll=enrollRes.json()
+    let enroll=await enrollRes.json();
+  if (!enroll) return false;
+
+  console.log(enroll);
 
   setEnrollInfo(enroll);
 
@@ -262,7 +285,6 @@ const onBackspace = () => {
         return;
       }
       wsRef.current.send(eightDigits); // 기존대로 8자리만 전송
-      Alert.alert('전송 완료', `번호 ${formatPhone(eightDigits)} 를 전송했습니다.`);
       setDigits('');
     } catch (e) {
       Alert.alert('전송 실패', '유저 조회 또는 웹소켓 전송 중 오류가 발생했습니다.');
@@ -311,29 +333,97 @@ const onBackspace = () => {
     }
   };
 
-  const loginCheck = async () => {
-  const token = await AsyncStorage.getItem("accessToken");
 
-  if (!token) {
-    console.log("토큰 없음 → 로그인 화면 유지");
-    return;
-  }
 
-  try {
-    // (선택) 토큰 만료 확인
-    const decoded = jwtDecode(token);
-    const now = Date.now() / 1000;
+const authFetch = async (url: string, options: any = {}) => {
+  let accessToken = await AsyncStorage.getItem("accessToken");
 
-    if (decoded.exp < now) {
-      console.log("토큰 만료");
-      await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-      return;
-    }
+  let res = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
-  } catch (e) {
-    console.log("토큰 파싱 실패", e);
-  }
+  if (res.status !== 401) return res;
+
+try {
+  accessToken = await refreshAccessToken();
+} catch {
+  await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+  throw new Error("logout");
+}
+  console.log("🟢 authFetch using accessToken:", accessToken);
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 };
+
+
+const refreshAccessToken = async () => {
+  const refreshToken = await AsyncStorage.getItem("refreshToken");
+
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+
+  console.log(refreshToken);
+
+  const res = await fetch(`${API_URL}/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+    }),
+  });
+
+  if (!res.ok) {
+    // refresh 자체가 만료 → 로그아웃
+    await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+    throw new Error("Refresh token expired");
+  }
+
+  const { access_token } = await res.json();
+  await AsyncStorage.setItem("accessToken", access_token);
+  console.log("🟡 refreshed accessToken:", access_token);
+  return access_token;
+};
+
+
+const renderEnrollInfo = (enrollInfo) => {
+  // total 없거나 0이면
+  if (!enrollInfo || !enrollInfo.total) {
+    return <Text>유효한 회원권이 없습니다.</Text>;
+  }
+
+  const endDateStr = enrollInfo.enroll_list[0].end_date; // '2026-03-31'
+  const endDate = new Date(endDateStr + 'T00:00:00');
+  const today = new Date();
+
+  // 날짜만 비교 (시간 제거)
+  today.setHours(0, 0, 0, 0);
+
+  const diffMs = endDate.getTime() - today.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+  return (
+    <Text>
+      종료일 ({endDateStr})까지{' '}
+      <Text style={{ fontSize: 20, fontWeight: '700' }}>
+        {diffDays}
+      </Text>
+      일 남았습니다.
+    </Text>
+  );
+};
+
 
   return (
     <SafeAreaView style={[styles.container, {paddingTop: insets.top}]}> 
@@ -349,10 +439,11 @@ const onBackspace = () => {
 
       {userInfo ? (
         <View style={styles.content}>
-          <Text style={styles.label}>유저 정보</Text>
+          <Text style={styles.label}>사용자 정보</Text>
           <View style={{marginVertical: 16, padding: 16, backgroundColor: '#f2f2f2', borderRadius: 8}}>
               <View  style={{marginBottom: 8}}>
                 <Text style={{fontWeight: '600'}}>회원명 : {userInfo.name}</Text>
+                {renderEnrollInfo(enrollInfo)}
               </View>
           </View>
           <TouchableOpacity style={styles.sendButton} onPress={() => setUserInfo(null)}>
@@ -360,9 +451,7 @@ const onBackspace = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.content} onReady={async () => {
-    await loginCheck();
-  }}>
+        <View style={styles.content}>
           <Text style={styles.label}>전화번호 (010 - xxxx - xxxx)</Text>
           <Text style={styles.display}>{formatPhone(digits)}</Text>
           <TextInput

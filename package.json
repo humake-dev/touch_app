@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "android:dev": "ENVFILE=.env.development npx react-native run-android",
+    "android:prod": "ENVFILE=.env npx react-native run-android",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
@@ -16,7 +18,9 @@
     "react-native": "0.82.1",
     "react-native-config": "^1.6.0",
     "react-native-keychain": "^10.0.0",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-safe-area-context": "^5.5.2",
+    "jwt-decode": "^4.0.0",
+    "yarn": "^1.22.22"    
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
