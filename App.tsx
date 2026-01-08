@@ -2,7 +2,6 @@ import Config from 'react-native-config';
 import React, {useEffect, useRef, useState} from 'react';
 import {
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -11,10 +10,12 @@ import {
   Modal,
   Alert,
   Platform,
+  Keyboard
 } from 'react-native';
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from "jwt-decode";
+
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
@@ -165,7 +166,43 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
   const [editingUrl, setEditingUrl] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
   const [userInfo, setUserInfo] = useState<any | null>(null); // user 정보 상태
-  const [enrollInfo, setEnrollInfo] = useState<any | null>(null); // user 정보 상태  
+  const [enrollInfo, setEnrollInfo] = useState<any | null>(null); // user 정보 상태 
+
+  const [countdown, setCountdown] = useState(5);
+const [showCountdown, setShowCountdown] = useState(false);
+
+const intervalRef = useRef(null);
+const timeoutRef = useRef(null);
+const inputRef = useRef(null);
+
+useEffect(() => {
+  if (!userInfo) return;
+
+  setShowCountdown(false);
+  setCountdown(6);
+
+  timeoutRef.current = setTimeout(() => {
+    setShowCountdown(true);
+
+    intervalRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current);
+          setDigits('');
+          setUserInfo(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, 1000);
+
+  return () => {
+    clearTimeout(timeoutRef.current);
+    clearInterval(intervalRef.current);
+  };
+}, [userInfo]); 
+
 
   // 계산기 스타일 입력을 위한 핸들러
 const onPressDigit = (d: string) => {
@@ -206,7 +243,6 @@ const onBackspace = () => {
     }
 
     try {
-      console.log(wsUrl);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       setConnectionState('connecting');
@@ -256,6 +292,8 @@ const onBackspace = () => {
   if (!user) return false;  
 
   setUserInfo(user);
+  Keyboard.dismiss();  
+  inputRef.current?.blur();  
 
   const enrollRes = await authFetch(`${API_URL}/enrolls?user_id=${user.id}`, {
     headers: {
@@ -281,7 +319,7 @@ const onBackspace = () => {
       // user 정보 활용 필요시 여기에 추가
       // 2. 웹소켓 전송
       if (!wsRef.current || connectionState !== 'open') {
-        Alert.alert('웹소켓 미연결', '서버에 연결되어 있지 않습니다. 설정에서 주소를 확인하세요.');
+       // Alert.alert('웹소켓 미연결', '서버에 연결되어 있지 않습니다. 설정에서 주소를 확인하세요.');
         return;
       }
       wsRef.current.send(eightDigits); // 기존대로 8자리만 전송
@@ -372,8 +410,6 @@ const refreshAccessToken = async () => {
     throw new Error("No refresh token");
   }
 
-  console.log(refreshToken);
-
   const res = await fetch(`${API_URL}/refresh`, {
     method: "POST",
     headers: {
@@ -398,26 +434,29 @@ const refreshAccessToken = async () => {
 
 
 const renderEnrollInfo = (enrollInfo) => {
-  // total 없거나 0이면
   if (!enrollInfo || !enrollInfo.total) {
     return <Text>유효한 회원권이 없습니다.</Text>;
   }
 
-  const endDateStr = enrollInfo.enroll_list[0].end_date; // '2026-03-31'
-  const endDate = new Date(endDateStr + 'T00:00:00');
-  const today = new Date();
+  const endDateStr = enrollInfo.enroll_list[0].end_date;
 
-  // 날짜만 비교 (시간 제거)
-  today.setHours(0, 0, 0, 0);
 
-  const diffMs = endDate.getTime() - today.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+  // 오늘 날짜를 문자열로 고정 (로컬/UTC 흔들림 제거)
+  const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+  const toUtcDate = (dateStr) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+
+  const diffDays =
+    (toUtcDate(endDateStr) - toUtcDate(todayStr)) / 86400000;
 
   return (
     <Text>
       종료일 ({endDateStr})까지{' '}
       <Text style={{ fontSize: 20, fontWeight: '700' }}>
-        {diffDays}
+        {Math.max(0, diffDays)}
       </Text>
       일 남았습니다.
     </Text>
@@ -443,15 +482,24 @@ const renderEnrollInfo = (enrollInfo) => {
           <View style={{marginVertical: 16, padding: 16, backgroundColor: '#f2f2f2', borderRadius: 8}}>
               <View  style={{marginBottom: 8}}>
                 <Text style={{fontWeight: '600'}}>회원명 : {userInfo.name}</Text>
+                <Text style={{fontWeight: '400'}}>회원번호 : {userInfo.branch_id}#{userInfo.id}</Text>                
                 {renderEnrollInfo(enrollInfo)}
               </View>
           </View>
-          <TouchableOpacity style={styles.sendButton} onPress={() => setUserInfo(null)}>
-            <Text style={styles.sendButtonText}>다시 입력</Text>
-          </TouchableOpacity>
+<TouchableOpacity
+  style={styles.sendButton}
+  onPress={() => setUserInfo(null)}
+>
+<Text style={styles.sendButtonText}>
+  입력창으로 돌아가기
+  {showCountdown ? ` (${countdown}초)` : ''}
+</Text>
+</TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.content}>
+      
+      <>
+      <View style={styles.content}>
           <Text style={styles.label}>전화번호 (010 - xxxx - xxxx)</Text>
           <Text style={styles.display}>{formatPhone(digits)}</Text>
           <TextInput
@@ -460,6 +508,7 @@ const renderEnrollInfo = (enrollInfo) => {
             onChangeText={handleChange}
             keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
             maxLength={8}
+            ref={inputRef}
             placeholder="8자리 번호만 입력하세요"
           />
           <View style={styles.statusRow}>
@@ -467,8 +516,6 @@ const renderEnrollInfo = (enrollInfo) => {
             <Text style={styles.statusText}>상태: {connectionState}</Text>
           </View>
         </View>
-      )}
-
       <View style={styles.keypadContainer}>
   <View style={styles.keypadRow}>
     {['1','2','3'].map(n => (
@@ -508,7 +555,8 @@ const renderEnrollInfo = (enrollInfo) => {
     </TouchableOpacity>
   </View>
 </View>
-
+</>
+            )}
       <Modal visible={settingsVisible} animationType="slide" onRequestClose={() => setSettingsVisible(false)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.tabRow}>
@@ -611,7 +659,7 @@ const styles = StyleSheet.create({
   },
   statusRow: {marginTop: 20},
   statusText: {color: '#444', marginTop: 4},
-
+  sendButtonText: {color: '#fff'},
   modalContainer: {flex: 1, padding: 20, backgroundColor: '#fff'},
   modalTitle: {fontSize: 20, fontWeight: '700', marginBottom: 12},
   modalLabel: {fontSize: 14, color: '#666'},
