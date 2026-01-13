@@ -84,8 +84,7 @@ The app cannot function without the backend API.
 This app communicates with the Gym Management API (FastAPI) for all business logic:
 
 - Authentication and authorization
-- Membership and payment data
-- Attendance tracking
+- Membership info
 
 The backend API repository:
 - https://github.com/humake-dev/api
