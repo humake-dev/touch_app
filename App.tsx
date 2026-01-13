@@ -13,6 +13,7 @@ import {
   Keyboard
 } from 'react-native';
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from "jwt-decode";
 
@@ -25,6 +26,8 @@ const DEFAULT_LOGIN_URL = Config.API_URL+'/admin_login';
 
 
 export default function App() {
+  useKeepAwake();
+
   const [isReady, setIsReady] = useState(false);
   const [hasBranch, setHasBranch] = useState(false);
 
@@ -435,11 +438,18 @@ const refreshAccessToken = async () => {
 
 const renderEnrollInfo = (enrollInfo) => {
   if (!enrollInfo || !enrollInfo.total) {
-    return <Text>유효한 회원권이 없습니다.</Text>;
+    return <Text  style={{fontSize: 50}}>유효한 회원권이 없습니다.</Text>;
   }
 
   const endDateStr = enrollInfo.enroll_list[0].end_date;
 
+  const endDate = new Date(endDateStr);
+
+const formattedDate = endDate.toLocaleDateString("ko-KR", {
+  year: "numeric",
+  month: "long",
+  day: "numeric"
+});
 
   // 오늘 날짜를 문자열로 고정 (로컬/UTC 흔들림 제거)
   const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
@@ -453,9 +463,9 @@ const renderEnrollInfo = (enrollInfo) => {
     (toUtcDate(endDateStr) - toUtcDate(todayStr)) / 86400000;
 
   return (
-    <Text>
-      종료일 ({endDateStr})까지{' '}
-      <Text style={{ fontSize: 20, fontWeight: '700' }}>
+    <Text style={{fontSize: 50}}>
+      종료일 ({formattedDate})까지{' '}
+      <Text style={{ fontSize: 70, fontWeight: '700' }}>
         {Math.max(0, diffDays)}
       </Text>
       일 남았습니다.
@@ -481,8 +491,8 @@ const renderEnrollInfo = (enrollInfo) => {
           <Text style={styles.label}>사용자 정보</Text>
           <View style={{marginVertical: 16, padding: 16, backgroundColor: '#f2f2f2', borderRadius: 8}}>
               <View  style={{marginBottom: 8}}>
-                <Text style={{fontWeight: '600'}}>회원명 : {userInfo.name}</Text>
-                <Text style={{fontWeight: '400'}}>회원번호 : {userInfo.branch_id}#{userInfo.id}</Text>                
+                <Text style={{fontWeight: '600', fontSize: 30}}>회원명 : {userInfo.name}</Text>
+                <Text style={{fontWeight: '400', fontSize: 30}}>회원번호 : {userInfo.branch_id}#{userInfo.id}</Text>                
                 {renderEnrollInfo(enrollInfo)}
               </View>
           </View>
