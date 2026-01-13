@@ -78,15 +78,19 @@ npx react-native run-android
 
 ## 🔗 Backend Integration
 
-This kiosk app integrates with the **Gym Management API (FastAPI)** to:
+⚠️ This React Native app **requires** the Gym Management API (FastAPI) to be running.<br>
+The app cannot function without the backend API.
 
-* Validate member phone numbers
-* Record attendance and entry time
-* Enforce membership status rules
+This app communicates with the Gym Management API (FastAPI) for all business logic:
 
-Backend API repository:
+- Authentication and authorization
+- Membership and payment data
+- Attendance tracking
 
-> [https://github.com/humake-dev/api](https://github.com/humake-dev/api)
+The backend API repository:
+- https://github.com/humake-dev/api
+
+⚠️ 이 앱은 Gym Management API (FastAPI)가 실행 중이어야 정상적으로 동작합니다.
 
 ---
 
