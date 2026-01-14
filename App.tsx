@@ -468,7 +468,6 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
             placeholder="8자리 번호만 입력하세요"
           />
           <View style={styles.statusRow}>
-            <Text style={styles.statusText}>WS: {wsUrl ?? '...'}</Text>
             <Text style={styles.statusText}>상태: {connectionState}</Text>
           </View>
         </View>
