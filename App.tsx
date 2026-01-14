@@ -16,13 +16,13 @@ import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-contex
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from "jwt-decode";
-
+import authFetch from './src/utils/api';
+import { handleApiError } from './src/utils/errorHandler';
+import { BASE_URL } from './Config';
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
 const DEFAULT_WS_URL = Config.WS_URL;
-const API_URL = Config.API_URL;
-const DEFAULT_LOGIN_URL = Config.API_URL+'/admin_login';
 
 
 export default function App() {
@@ -89,23 +89,25 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
       return;
     }
     setLoading(true);
+
     try {
       const param = new URLSearchParams();
       param.append('username', id);
       param.append('password', pw);
 
-      const res = await fetch(DEFAULT_LOGIN_URL, {
+      console.log(`${BASE_URL}`+'/admin_login');
+
+      const res = await fetch(`${BASE_URL}`+'/admin_login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: param.toString(),
       });     
 
-    // 🔥 로그인 실패 처리
-    if (!res.ok) {
-      // FastAPI: { "detail": "Invalid credentials" }
-      const data = await res.json();
-      throw new Error((data && (data.detail || data.message)) || '로그인 실패');
+      // 🔥 로그인 실패 처리
+      if (!res.ok) {
+       await handleApiError(res);
     }
+    
 
     const data = await res.json();
     
@@ -279,12 +281,14 @@ const onBackspace = () => {
 
   const sendPhone = async (eightDigits: string) => {
     const phone = '010' + eightDigits;
+
+    console.log(`/users?phone=${phone}`);
     try {
-  const userRes = await authFetch(`${API_URL}/users?phone=${phone}`, {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+      const userRes = await authFetch(`/users?phone=${phone}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
   if (!userRes.ok) {
     Alert.alert('유저 조회 실패', '서버에서 유저 정보를 받아오지 못했습니다.');
@@ -292,13 +296,14 @@ const onBackspace = () => {
   } 
   
   let user=await userRes.json();
+  console.log(user);
   if (!user) return false;  
 
   setUserInfo(user);
   Keyboard.dismiss();  
   inputRef.current?.blur();  
 
-  const enrollRes = await authFetch(`${API_URL}/enrolls?user_id=${user.id}`, {
+  const enrollRes = await authFetch(`/enrolls?user_id=${user.id}`, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -328,6 +333,7 @@ const onBackspace = () => {
       wsRef.current.send(eightDigits); // 기존대로 8자리만 전송
       setDigits('');
     } catch (e) {
+      console.log(e);
       Alert.alert('전송 실패', '유저 조회 또는 웹소켓 전송 중 오류가 발생했습니다.');
     }
   };
@@ -374,66 +380,6 @@ const onBackspace = () => {
     }
   };
 
-
-
-const authFetch = async (url: string, options: any = {}) => {
-  let accessToken = await AsyncStorage.getItem("accessToken");
-
-  let res = await fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (res.status !== 401) return res;
-
-try {
-  accessToken = await refreshAccessToken();
-} catch {
-  await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-  throw new Error("logout");
-}
-  console.log("🟢 authFetch using accessToken:", accessToken);
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-};
-
-
-const refreshAccessToken = async () => {
-  const refreshToken = await AsyncStorage.getItem("refreshToken");
-
-  if (!refreshToken) {
-    throw new Error("No refresh token");
-  }
-
-  const res = await fetch(`${API_URL}/refresh`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      refresh_token: refreshToken,
-    }),
-  });
-
-  if (!res.ok) {
-    // refresh 자체가 만료 → 로그아웃
-    await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-    throw new Error("Refresh token expired");
-  }
-
-  const { access_token } = await res.json();
-  await AsyncStorage.setItem("accessToken", access_token);
-  console.log("🟡 refreshed accessToken:", access_token);
-  return access_token;
-};
 
 
 const renderEnrollInfo = (enrollInfo) => {
