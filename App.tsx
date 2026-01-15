@@ -163,12 +163,16 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
 
   const [digits, setDigits] = useState(''); // 최대 8자리 숫자
   const [wsUrl, setWsUrl] = useState<string | null>(null);
+
+
+
   const [connectionState, setConnectionState] = useState<string>('closed');
   const wsRef = useRef<WebSocket | null>(null);
 
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'ws' | 'logout'>('ws');
-  const [editingUrl, setEditingUrl] = useState('');
+  const [editingUrl, setEditingUrl] = useState(wsUrl ?? DEFAULT_WS_URL);
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [userInfo, setUserInfo] = useState<any | null>(null); // user 정보 상태
   const [enrollInfo, setEnrollInfo] = useState<any | null>(null); // user 정보 상태 
@@ -179,6 +183,8 @@ const [showCountdown, setShowCountdown] = useState(false);
 const intervalRef = useRef(null);
 const timeoutRef = useRef(null);
 const inputRef = useRef(null);
+
+
 
 useEffect(() => {
   if (!userInfo) return;
@@ -208,6 +214,18 @@ useEffect(() => {
   };
 }, [userInfo]); 
 
+
+const onChangeUrl = (text: string) => {
+  setEditingUrl(text);
+
+  if (!text) {
+    setUrlError('웹소켓 주소를 입력하세요.');
+  } else if (!isValidWsUrl(text)) {
+    setUrlError('ws:// 또는 wss:// 로 시작해야 합니다.');
+  } else {
+    setUrlError(null);
+  }
+};
 
   // 계산기 스타일 입력을 위한 핸들러
 const onPressDigit = (d: string) => {
@@ -291,7 +309,7 @@ const onBackspace = () => {
       });
 
   if (!userRes.ok) {
-    Alert.alert('유저 조회 실패', '서버에서 유저 정보를 받아오지 못했습니다.');
+    Alert.alert('조회 실패', '해당 정보의 회원을 찾을 수 없습니다.');
     return;
   } 
   
@@ -312,7 +330,7 @@ const onBackspace = () => {
 
 
   if (!enrollRes.ok) {
-    Alert.alert('등록 정보 조회 실패', '서버에서 enroll 정보를 받아오지 못했습니다.');
+    Alert.alert('등록 정보 조회 실패', '해당 회원의 등록정보를 받아오지 못했습니다.');
     return;
   }
 
@@ -334,7 +352,7 @@ const onBackspace = () => {
       setDigits('');
     } catch (e) {
       console.log(e);
-      Alert.alert('전송 실패', '유저 조회 또는 웹소켓 전송 중 오류가 발생했습니다.');
+      // Alert.alert('전송 실패', '유저 조회 또는 웹소켓 전송 중 오류가 발생했습니다.');
     }
   };
 
@@ -347,12 +365,28 @@ const onBackspace = () => {
     return `010 - ${a} - ${b}`;
   };
 
+  const isValidWsUrl = (url: string) => {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'ws:' || u.protocol === 'wss:';
+  } catch {
+    return false;
+  }
+};
+
+
   const saveSettings = async () => {
+  if (!isValidWsUrl(editingUrl)) {
+    setUrlError('올바른 웹소켓 주소(ws:// 또는 wss://)를 입력하세요.');
+    return;
+  }
+
     const trimmed = editingUrl.trim();
     if (!trimmed) {
       Alert.alert('오류', '웹소켓 URL을 입력하세요.');
       return;
     }
+
     try {
       await AsyncStorage.setItem(STORAGE_KEY_WS, trimmed);
       setWsUrl(trimmed);
@@ -377,6 +411,23 @@ const onBackspace = () => {
       Alert.alert('오류', '로그아웃 실패');
     } finally {
       setLoggingOut(false);
+    }
+  };
+
+
+    // 상태별 색상 결정
+  const getStatusColor = () => {
+    switch (connectionState) {
+      case 'open':
+        return 'green';
+      case 'closed':
+        return 'gray';
+      case 'error':
+        return 'red';
+      case 'connecting':
+        return 'orange';
+      default:
+        return 'black';
     }
   };
 
@@ -467,9 +518,10 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
             ref={inputRef}
             placeholder="8자리 번호만 입력하세요"
           />
-          <View style={styles.statusRow}>
-            <Text style={styles.statusText}>상태: {connectionState}</Text>
-          </View>
+
+    <View style={styles.statusRow}>
+      <Text style={styles.statusText}>접속상태:  <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]} /></Text>
+    </View>          
         </View>
       <View style={styles.keypadContainer}>
   <View style={styles.keypadRow}>
@@ -528,52 +580,55 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
               <Text style={[styles.tabBtnText, settingsTab === 'logout' && styles.tabBtnTextActive]}>로그아웃</Text>
             </TouchableOpacity>
           </View>
-          {settingsTab === 'ws' ? (
-            <>
-              <Text style={styles.modalTitle}>웹소켓 주소</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={editingUrl}
-                onChangeText={setEditingUrl}
-                placeholder={DEFAULT_WS_URL}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.modalBtn} onPress={saveSettings}>
-                  <Text style={styles.modalBtnText}>저장</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalBtn, {backgroundColor: '#ddd'}]}
-                  onPress={() => {
-                    setEditingUrl(wsUrl ?? DEFAULT_WS_URL);
-                    setSettingsVisible(false);
-                  }}>
-                  <Text style={[styles.modalBtnText, {color: '#000'}]}>취소</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={styles.modalTitle}>로그아웃</Text>
-              <Text style={{marginBottom: 24, color: '#666'}}>로그아웃 시 모든 인증 정보가 삭제됩니다.</Text>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalBtn, {backgroundColor: '#d00'}]}
-                  onPress={handleLogout}
-                  disabled={loggingOut}
-                >
-                  <Text style={[styles.modalBtnText, {color: '#fff'}]}>{loggingOut ? '로그아웃 중...' : '로그아웃'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalBtn, {backgroundColor: '#ddd'}]}
-                  onPress={() => setSettingsVisible(false)}
-                  disabled={loggingOut}
-                >
-                  <Text style={[styles.modalBtnText, {color: '#000'}]}>취소</Text>
-                </TouchableOpacity>
-              </View>
-            </>
+{settingsTab === 'ws' && (
+<>
+  <Text style={styles.modalTitle}>웹소켓 주소</Text>
+
+  <TextInput
+    style={[
+      styles.modalInput,
+      urlError && { borderColor: 'red' },
+    ]}
+    value={editingUrl}
+    onChangeText={onChangeUrl}
+    placeholder={DEFAULT_WS_URL}
+    autoCapitalize="none"
+    autoCorrect={false}
+  />
+
+  {urlError && (
+    <Text style={{ color: 'red', marginTop: 6, fontSize: 12 }}>
+      {urlError}
+    </Text>
+  )}
+
+  <View style={styles.modalButtons}>
+    <TouchableOpacity
+      style={[
+        styles.modalBtn,
+        urlError && { opacity: 0.5 },
+      ]}
+      onPress={saveSettings}
+      disabled={!!urlError}
+    >
+      <Text style={styles.modalBtnText}>저장</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[styles.modalBtn, { backgroundColor: '#ddd' }]}
+      onPress={() => {
+        setEditingUrl(wsUrl ?? DEFAULT_WS_URL);
+        setUrlError(null);
+        setSettingsVisible(false);
+      }}
+    >
+      <Text style={[styles.modalBtnText, { color: '#000' }]}>
+        취소
+      </Text>
+    </TouchableOpacity>
+  </View>
+</>
+
           )}
         </SafeAreaView>
       </Modal>
@@ -635,6 +690,21 @@ const styles = StyleSheet.create({
   tabBtnActive: {borderBottomWidth: 2, borderBottomColor: '#007aff'},
   tabBtnText: {fontSize: 16, color: '#888'},
   tabBtnTextActive: {color: '#007aff', fontWeight: '700'},
+
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 10,
+  },
+  statusBox: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 16,
+  },  
 
   /* keypad styles */
 keypadContainer: {marginTop: 8},
