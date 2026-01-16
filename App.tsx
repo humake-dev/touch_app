@@ -258,35 +258,38 @@ const onBackspace = () => {
     })();
   }, []);
 
-  useEffect(() => {
-    if (!wsUrl) return;
+useEffect(() => {
+  if (!wsUrl) return;
+
+  if (!isValidWsUrl(wsUrl)) {
+    console.warn('Invalid WebSocket URL:', wsUrl);
+    setConnectionState('error'); // 또는 'closed'
+    return;
+  }
+
+  if (wsRef.current) {
+    try { wsRef.current.close(); } catch {}
+    wsRef.current = null;
+  }
+
+  const ws = new WebSocket(wsUrl);
+  wsRef.current = ws;
+  setConnectionState('connecting');
+
+  ws.onopen = () => setConnectionState('open');
+  ws.onclose = () => setConnectionState('closed');
+  ws.onerror = () => setConnectionState('error');
+  ws.onmessage = e => {
+    console.log('WS message:', e.data);
+  };
+
+  return () => {
     if (wsRef.current) {
       try { wsRef.current.close(); } catch {}
       wsRef.current = null;
     }
-
-    try {
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-      setConnectionState('connecting');
-
-      ws.onopen = () => setConnectionState('open');
-      ws.onclose = () => setConnectionState('closed');
-      ws.onerror = () => setConnectionState('error');
-      ws.onmessage = e => {
-        console.log('WS message:', e.data);
-      };
-    } catch (err) {
-      setConnectionState('error');
-    }
-
-    return () => {
-      if (wsRef.current) {
-        try { wsRef.current.close(); } catch {}
-        wsRef.current = null;
-      }
-    };
-  }, [wsUrl]);
+  };
+}, [wsUrl]);
 
   const handleChange = (text: string) => {
     const onlyDigits = text.replace(/[^0-9]/g, '');
@@ -300,7 +303,6 @@ const onBackspace = () => {
   const sendPhone = async (eightDigits: string) => {
     const phone = '010' + eightDigits;
 
-    console.log(`/users?phone=${phone}`);
     try {
       const userRes = await authFetch(`/users?phone=${phone}`, {
         headers: {
