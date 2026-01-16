@@ -580,7 +580,7 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
               <Text style={[styles.tabBtnText, settingsTab === 'logout' && styles.tabBtnTextActive]}>로그아웃</Text>
             </TouchableOpacity>
           </View>
-{settingsTab === 'ws' && (
+          {settingsTab === 'ws' ? (
 <>
   <Text style={styles.modalTitle}>웹소켓 주소</Text>
 
@@ -629,6 +629,27 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
   </View>
 </>
 
+          ) : (
+            <>
+              <Text style={styles.modalTitle}>로그아웃</Text>
+              <Text style={{marginBottom: 24, color: '#666'}}>로그아웃 시 모든 인증 정보가 삭제됩니다.</Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, {backgroundColor: '#d00'}]}
+                  onPress={handleLogout}
+                  disabled={loggingOut}
+                >
+                  <Text style={[styles.modalBtnText, {color: '#fff'}]}>{loggingOut ? '로그아웃 중...' : '로그아웃'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, {backgroundColor: '#ddd'}]}
+                  onPress={() => setSettingsVisible(false)}
+                  disabled={loggingOut}
+                >
+                  <Text style={[styles.modalBtnText, {color: '#000'}]}>취소</Text>
+                </TouchableOpacity>
+              </View>
+            </>
           )}
         </SafeAreaView>
       </Modal>
