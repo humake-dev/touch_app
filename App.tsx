@@ -183,7 +183,7 @@ const [showCountdown, setShowCountdown] = useState(false);
 const intervalRef = useRef(null);
 const timeoutRef = useRef(null);
 const inputRef = useRef(null);
-
+const sendingRef = useRef(false);
 
 
 useEffect(() => {
@@ -301,6 +301,9 @@ useEffect(() => {
   };
 
   const sendPhone = async (eightDigits: string) => {
+  if (sendingRef.current) return; // 🔒 이미 전송 중이면 무시
+  sendingRef.current = true;
+
     const phone = '010' + eightDigits;
 
     try {
@@ -311,12 +314,13 @@ useEffect(() => {
       });
   
   let user=await userRes.json();
-  console.log(user);
   if (!user) return false;  
 
   setUserInfo(user);
   Keyboard.dismiss();  
   inputRef.current?.blur();  
+  
+
 
   const enrollRes = await authFetch(`/enrolls?user_id=${user.id}`, {
     headers: {
@@ -325,11 +329,11 @@ useEffect(() => {
   });
 
 
-/*
+
   if (!enrollRes.ok) {
     Alert.alert('등록 정보 조회 실패', '해당 회원의 등록정보를 받아오지 못했습니다.');
     return;
-  } */
+  }
 
     let enroll=await enrollRes.json();
   if (!enroll) return false;
@@ -337,6 +341,15 @@ useEffect(() => {
   console.log(enroll);
 
   setEnrollInfo(enroll);
+
+
+
+      authFetch(`/entrances`, { method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: user.id }),
+    });
 
 
       // user 정보 활용 필요시 여기에 추가
@@ -347,10 +360,14 @@ useEffect(() => {
       }
       wsRef.current.send(eightDigits); // 기존대로 8자리만 전송
       setDigits('');
-    } catch (e) {
-      console.log(e);
-      // Alert.alert('전송 실패', '유저 조회 또는 웹소켓 전송 중 오류가 발생했습니다.');
-    }
+  } catch (e) {
+    Alert.alert(e.message || '오류 발생');
+  } finally {
+    // ⏱️ 약간의 쿨타임 후 해제
+    setTimeout(() => {
+      sendingRef.current = false;
+    }, 300);
+  }
   };
 
   const formatPhone = (input: string) => {

@@ -5,36 +5,42 @@ import { BASE_URL } from '../../Config';
 const authFetch = async (url: string, options: any = {}) => {
   let accessToken = await AsyncStorage.getItem("accessToken");
 
-  let res = await fetch(`${BASE_URL}`+url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  const doFetch = (token: string | null) =>
+    fetch(`${BASE_URL}${url}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
 
-  console.log("🟢 authFetch initial response", res);
+  // 1️⃣ 첫 요청
+  let res = await doFetch(accessToken);
+
+  // 2️⃣ 정상 응답이면 바로 리턴
   if (res.status !== 401) {
     if (!res.ok) {
       await handleApiError(res);
-    }  
-  }   
+    }
+    return res;
+  }
 
+  // 3️⃣ 401 → refresh 시도
+  try {
+    accessToken = await refreshAccessToken();
+  } catch {
+    await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+    throw new Error("logout");
+  }
 
-try {
-  accessToken = await refreshAccessToken();
-} catch {
-  await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-  throw new Error("logout");
-}
-  console.log("🟢 authFetch using accessToken:", accessToken);
-  return fetch(`${BASE_URL}`+url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  // 4️⃣ refresh 성공 → 재요청 (1회)
+  res = await doFetch(accessToken);
+
+  if (!res.ok) {
+    await handleApiError(res);
+  }
+
+  return res;
 };
 
 const refreshAccessToken = async () => {
