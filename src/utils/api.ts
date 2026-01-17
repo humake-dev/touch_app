@@ -13,6 +13,7 @@ const authFetch = async (url: string, options: any = {}) => {
     },
   });
 
+  console.log("🟢 authFetch initial response", res);
   if (res.status !== 401) {
     if (!res.ok) {
       await handleApiError(res);
