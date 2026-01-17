@@ -10,7 +10,8 @@ import {
   Modal,
   Alert,
   Platform,
-  Keyboard
+  Keyboard,
+  useWindowDimensions
 } from 'react-native';
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
@@ -128,7 +129,7 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1,  alignItems: 'center', backgroundColor: '#fff' }}>
       <View style={{ width: '85%', padding: 24, borderRadius: 12, backgroundColor: '#f7f7f7', elevation: 2 }}>
         <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 24, textAlign: 'center' }}>로그인</Text>
         <TextInput
@@ -437,7 +438,7 @@ useEffect(() => {
 
 const renderEnrollInfo = (enrollInfo) => {
   if (!enrollInfo || !enrollInfo.total) {
-    return <Text  style={{fontSize: 50}}>유효한 회원권이 없습니다.</Text>;
+    return <Text style={{fontSize: 50}}>유효한 회원권이 없습니다.</Text>;
   }
 
   const endDateStr = enrollInfo.enroll_list[0].end_date;
@@ -463,15 +464,16 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
 
   return (
     <Text style={{fontSize: 50}}>
-      종료일 ({formattedDate})까지{' '}
-      <Text style={{ fontSize: 70, fontWeight: '700' }}>
-        {Math.max(0, diffDays)}
-      </Text>
-      일 남았습니다.
+      <Text>종료일 ({formattedDate})까지</Text>
+      <Text style={{ fontSize: 70, fontWeight: '700' }}> {Math.max(0, diffDays)} </Text>
+      <Text>일 남았습니다.</Text>
     </Text>
   );
 };
 
+
+  const window = useWindowDimensions();
+  const isLandscape = window.width > window.height;
 
   return (
     <SafeAreaView style={[styles.container, {paddingTop: insets.top}]}> 
@@ -497,7 +499,10 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
           </View>
 <TouchableOpacity
   style={styles.sendButton}
-  onPress={() => setUserInfo(null)}
+  onPress={() => {
+    setUserInfo(null);
+    setDigits('');
+  }}
 >
 <Text style={styles.sendButtonText}>
   입력창으로 돌아가기
@@ -506,66 +511,72 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
 </TouchableOpacity>
         </View>
       ) : (
-      
-      <>
-      <View style={styles.content}>
-          <Text style={styles.label}>전화번호 (010 - xxxx - xxxx)</Text>
-          <Text style={styles.display}>{formatPhone(digits)}</Text>
-          <TextInput
-            style={styles.input}
-            value={digits}
-            onChangeText={handleChange}
-            keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-            maxLength={8}
-            ref={inputRef}
-            placeholder="8자리 번호만 입력하세요"
-          />
-
-    <View style={styles.statusRow}>
-      <Text style={styles.statusText}>접속상태:  <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]} /></Text>
-    </View>          
+        <View
+          style={
+            isLandscape
+              ? { flexDirection: 'row', flex: 1 }
+              : { flex: 1, flexDirection: 'column' }
+          }
+        >
+          <View style={[styles.content, { flex: 1 }]}> {/* 입력 영역 */}
+            <Text style={styles.label}>전화번호 (010 - xxxx - xxxx)</Text>
+            <Text style={styles.display}>{formatPhone(digits)}</Text>
+            <TextInput
+              style={styles.input}
+              value={digits}
+              onChangeText={handleChange}
+              keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+              maxLength={8}
+              ref={inputRef}
+              placeholder="8자리 번호만 입력하세요"
+            />
+            <View style={styles.statusRow}>
+              <Text style={styles.statusText}>접속상태:</Text>
+              <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]} />
+            </View>
+          </View>
+          <View style={styles.keypadContainer}>
+            <View style={[styles.keypadRow, { flex: 1 }]}> {/* 1,2,3 */}
+              {['1', '2', '3'].map((n) => (
+                <TouchableOpacity key={n} style={styles.key} onPress={() => onPressDigit(n)}>
+                  <Text style={styles.keyText}>{n}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={[styles.keypadRow, { flex: 1 }]}> {/* 4,5,6 */}
+              {['4', '5', '6'].map((n) => (
+                <TouchableOpacity key={n} style={styles.key} onPress={() => onPressDigit(n)}>
+                  <Text style={styles.keyText}>{n}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={[styles.keypadRow, { flex: 1 }]}> {/* 7,8,9 */}
+              {['7', '8', '9'].map((n) => (
+                <TouchableOpacity key={n} style={[styles.key, { flex: 1}]} onPress={() => onPressDigit(n)}>
+                  <Text style={styles.keyText}>{n}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={[styles.keypadRow, { flex: 1 }]}> {/* ⌫,0,전송 */}
+              <TouchableOpacity style={[styles.key, styles.keyAction, { flex: 1}]} onPress={onBackspace}>
+                <Text style={styles.keyText}>⌫</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.key} onPress={() => onPressDigit('0')}>
+                <Text style={styles.keyText}>0</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.key, styles.keyAction, { flex: 1 }]}
+                onPress={() => {
+                  if (digits.length === 8) sendPhone(digits);
+                  else Alert.alert('입력 오류', '8자리 번호를 입력해야 합니다.');
+                }}
+              >
+                <Text style={styles.keyText}>전송</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      <View style={styles.keypadContainer}>
-  <View style={styles.keypadRow}>
-    {['1','2','3'].map(n => (
-      <TouchableOpacity key={n} style={styles.key} onPress={() => onPressDigit(n)}>
-        <Text style={styles.keyText}>{n}</Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-  <View style={styles.keypadRow}>
-    {['4','5','6'].map(n => (
-      <TouchableOpacity key={n} style={styles.key} onPress={() => onPressDigit(n)}>
-        <Text style={styles.keyText}>{n}</Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-  <View style={styles.keypadRow}>
-    {['7','8','9'].map(n => (
-      <TouchableOpacity key={n} style={styles.key} onPress={() => onPressDigit(n)}>
-        <Text style={styles.keyText}>{n}</Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-  <View style={styles.keypadRow}>
-    <TouchableOpacity style={[styles.key, styles.keyAction]} onPress={onBackspace}>
-      <Text style={styles.keyText}>⌫</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.key} onPress={() => onPressDigit('0')}>
-      <Text style={styles.keyText}>0</Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[styles.key, styles.keyAction]}
-      onPress={() => {
-        if (digits.length === 8) sendPhone(digits);
-        else Alert.alert('입력 오류', '8자리 번호를 입력해야 합니다.');
-      }}>
-      <Text style={styles.keyText}>전송</Text>
-    </TouchableOpacity>
-  </View>
-</View>
-</>
-            )}
+      )}
       <Modal visible={settingsVisible} animationType="slide" onRequestClose={() => setSettingsVisible(false)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.tabRow}>
@@ -583,56 +594,47 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
             </TouchableOpacity>
           </View>
           {settingsTab === 'ws' ? (
-<>
-  <Text style={styles.modalTitle}>웹소켓 주소</Text>
-
-  <TextInput
-    style={[
-      styles.modalInput,
-      urlError && { borderColor: 'red' },
-    ]}
-    value={editingUrl}
-    onChangeText={onChangeUrl}
-    placeholder={DEFAULT_WS_URL}
-    autoCapitalize="none"
-    autoCorrect={false}
-  />
-
-  {urlError && (
-    <Text style={{ color: 'red', marginTop: 6, fontSize: 12 }}>
-      {urlError}
-    </Text>
-  )}
-
-  <View style={styles.modalButtons}>
-    <TouchableOpacity
-      style={[
-        styles.modalBtn,
-        urlError && { opacity: 0.5 },
-      ]}
-      onPress={saveSettings}
-      disabled={!!urlError}
-    >
-      <Text style={styles.modalBtnText}>저장</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity
-      style={[styles.modalBtn, { backgroundColor: '#ddd' }]}
-      onPress={() => {
-        setEditingUrl(wsUrl ?? DEFAULT_WS_URL);
-        setUrlError(null);
-        setSettingsVisible(false);
-      }}
-    >
-      <Text style={[styles.modalBtnText, { color: '#000' }]}>
-        취소
-      </Text>
-    </TouchableOpacity>
-  </View>
-</>
-
+            <View>
+              <Text style={styles.modalTitle}>웹소켓 주소</Text>
+              <TextInput
+                style={[
+                  styles.modalInput,
+                  urlError && { borderColor: 'red' },
+                ]}
+                value={editingUrl}
+                onChangeText={onChangeUrl}
+                placeholder={DEFAULT_WS_URL}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {urlError ? (
+                <Text style={{ color: 'red', marginTop: 6, fontSize: 12 }}>{urlError}</Text>
+              ) : null}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.modalBtn,
+                    urlError && { opacity: 0.5 },
+                  ]}
+                  onPress={saveSettings}
+                  disabled={!!urlError}
+                >
+                  <Text style={styles.modalBtnText}>저장</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, { backgroundColor: '#ddd' }]}
+                  onPress={() => {
+                    setEditingUrl(wsUrl ?? DEFAULT_WS_URL);
+                    setUrlError(null);
+                    setSettingsVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalBtnText, { color: '#000' }]}>취소</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
-            <>
+            <View>
               <Text style={styles.modalTitle}>로그아웃</Text>
               <Text style={{marginBottom: 24, color: '#666'}}>로그아웃 시 모든 인증 정보가 삭제됩니다.</Text>
               <View style={styles.modalButtons}>
@@ -651,7 +653,7 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
                   <Text style={[styles.modalBtnText, {color: '#000'}]}>취소</Text>
                 </TouchableOpacity>
               </View>
-            </>
+            </View>
           )}
         </SafeAreaView>
       </Modal>
@@ -690,9 +692,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  statusRow: {marginTop: 20},
-  statusText: {color: '#444', marginTop: 4},
-  sendButtonText: {color: '#fff'},
+  sendButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 10,
+  },
+  statusBox: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 16,
+    color: '#444',
+    marginTop: 4,
+  },  
+
   modalContainer: {flex: 1, padding: 20, backgroundColor: '#fff'},
   modalTitle: {fontSize: 20, fontWeight: '700', marginBottom: 12},
   modalLabel: {fontSize: 14, color: '#666'},
@@ -714,25 +735,26 @@ const styles = StyleSheet.create({
   tabBtnText: {fontSize: 16, color: '#888'},
   tabBtnTextActive: {color: '#007aff', fontWeight: '700'},
 
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 10,
-  },
-  statusBox: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 16,
-  },  
-
   /* keypad styles */
-keypadContainer: {marginTop: 8},
-keypadRow: {flexDirection: 'row', justifyContent: 'space-between', marginVertical: 6},
-key: {flex: 1, marginHorizontal: 6, backgroundColor: '#f2f2f2', borderRadius: 8, paddingVertical: 18, alignItems: 'center', justifyContent: 'center'},
-keyText: {fontSize: 20, fontWeight: '600'},
+keypadContainer: {flex: 1},
+keypadRow: {
+  flex: 1,
+  flexDirection: 'row',
+  marginVertical: 4,
+},
+
+key: {
+  flex: 1,
+  marginHorizontal: 6,
+  backgroundColor: '#f2f2f2',
+  borderRadius: 8,
+  alignItems: 'center',
+  justifyContent: 'center'
+},
+
+keyText: {
+  fontSize: 20,
+  fontWeight: '600',
+},
 keyAction: {backgroundColor: '#d0e8ff'},
 });

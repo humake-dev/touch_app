@@ -13,11 +13,12 @@ const authFetch = async (url: string, options: any = {}) => {
     },
   });
 
-  if (res.status !== 401) return res;
+  if (res.status !== 401) {
+    if (!res.ok) {
+      await handleApiError(res);
+    }  
+  }   
 
-  if (!res.ok) {
-    await handleApiError(res);
-  }  
 
 try {
   accessToken = await refreshAccessToken();
