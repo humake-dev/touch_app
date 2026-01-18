@@ -13,12 +13,16 @@ import {
   useWindowDimensions
 } from 'react-native';
 import {SafeAreaView, SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {I18nextProvider} from 'react-i18next';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from "jwt-decode";
 import authFetch from './src/utils/api';
 import { handleApiError } from './src/utils/errorHandler';
 import { BASE_URL } from './Config';
+import i18n from './i18n/i18n';
+import { useTranslation } from 'react-i18next'; 
+import { t } from 'i18next';
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
@@ -77,6 +81,7 @@ export default function App() {
 }
 
 function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+  const { t } = useTranslation();
   const [id, setId] = useState('');
   const [pw, setPw] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,7 +90,7 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const handleLogin = async () => {
     setError('');
     if (!id || !pw) {
-      setError('아이디와 비밀번호를 입력하세요.');
+      setError(t('login.error.empty'));
       return;
     }
     setLoading(true);
@@ -117,11 +122,11 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         await AsyncStorage.setItem(STORAGE_KEY_BRANCH, String(data.branch_id));
         onLoginSuccess();
       } else {
-        setError(data.message || '로그인 실패');
+        setError(data.message || t('login.error.failed'));
       }
     } catch (err) {
       console.log('LOGIN ERROR', err);
-      setError(err?.message || '네트워크 오류');
+      setError(err?.message || t('login.error.network'));
     } finally {
       setLoading(false);
     }
@@ -129,18 +134,19 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+      <I18nextProvider i18n={i18n}>
       <View style={{ width: '85%', padding: 24, borderRadius: 12, backgroundColor: '#f7f7f7', elevation: 2 }}>
-        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 24, textAlign: 'center' }}>로그인</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 24, textAlign: 'center' }}>{t('menu.login')}</Text>
         <TextInput
           style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 12, fontSize: 16, marginBottom: 16, backgroundColor: '#fff' }}
-          placeholder="아이디"
+          placeholder={t('login.username')}
           autoCapitalize="none"
           value={id}
           onChangeText={setId}
         />
         <TextInput
           style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 12, fontSize: 16, marginBottom: 16, backgroundColor: '#fff' }}
-          placeholder="비밀번호"
+          placeholder={t("login.password")}
           secureTextEntry
           value={pw}
           onChangeText={setPw}
@@ -151,9 +157,10 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{loading ? '로그인 중...' : '로그인'}</Text>
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{loading ? t('login.loading') : t('login.submit')}</Text>
         </TouchableOpacity>
       </View>
+      </I18nextProvider>
     </SafeAreaView>
   );
 }
@@ -161,7 +168,7 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
   const insets = useSafeAreaInsets();
 
-  const [digits, setDigits] = useState(''); // 최대 8자리 숫자
+  const [digits, setDigits] = useState(''); // 8 digits
   const [wsUrl, setWsUrl] = useState<string | null>(null);
 
 
@@ -219,9 +226,9 @@ const onChangeUrl = (text: string) => {
   setEditingUrl(text);
 
   if (!text) {
-    setUrlError('웹소켓 주소를 입력하세요.');
+    setUrlError(t('settings.ws_error_empty'));
   } else if (!isValidWsUrl(text)) {
-    setUrlError('ws:// 또는 wss:// 로 시작해야 합니다.');
+    setUrlError(t('settings.ws_error_invalid'));
   } else {
     setUrlError(null);
   }
@@ -329,13 +336,7 @@ useEffect(() => {
   });
 
 
-
-  if (!enrollRes.ok) {
-    Alert.alert('등록 정보 조회 실패', '해당 회원의 등록정보를 받아오지 못했습니다.');
-    return;
-  }
-
-    let enroll=await enrollRes.json();
+  let enroll=await enrollRes.json();
   if (!enroll) return false;
 
   console.log(enroll);
@@ -361,7 +362,7 @@ useEffect(() => {
       wsRef.current.send(eightDigits); // 기존대로 8자리만 전송
       setDigits('');
   } catch (e) {
-    Alert.alert(e.message || '오류 발생');
+      Alert.alert(t(e.message) || '오류 발생');
   } finally {
     // ⏱️ 약간의 쿨타임 후 해제
     setTimeout(() => {
@@ -391,13 +392,13 @@ useEffect(() => {
 
   const saveSettings = async () => {
   if (!isValidWsUrl(editingUrl)) {
-    setUrlError('올바른 웹소켓 주소(ws:// 또는 wss://)를 입력하세요.');
+    setUrlError(t('settings.ws_error_invalid'));
     return;
   }
 
     const trimmed = editingUrl.trim();
     if (!trimmed) {
-      Alert.alert('오류', '웹소켓 URL을 입력하세요.');
+      Alert.alert(t('common.error'), t('settings.ws_error_empty'));
       return;
     }
 
@@ -405,9 +406,9 @@ useEffect(() => {
       await AsyncStorage.setItem(STORAGE_KEY_WS, trimmed);
       setWsUrl(trimmed);
       setSettingsVisible(false);
-      Alert.alert('저장됨', '웹소켓 주소를 저장했습니다. 재연결을 시도합니다.');
+      Alert.alert(t('common.success'), t('settings.ws_saved'));
     } catch (e) {
-      Alert.alert('오류', '설정 저장에 실패했습니다.');
+      Alert.alert(t('common.error'), t('settings.ws_save_failed'));
     }
   };
 
@@ -422,7 +423,7 @@ useEffect(() => {
       setSettingsVisible(false);
       onForceLogout(); // 즉시 상위(App)에서 로그인 화면으로 전환
     } catch (e) {
-      Alert.alert('오류', '로그아웃 실패');
+      Alert.alert(t('common.error'), t('settings.logout_failed'));
     } finally {
       setLoggingOut(false);
     }
@@ -449,7 +450,7 @@ useEffect(() => {
 
 const renderEnrollInfo = (enrollInfo) => {
   if (!enrollInfo || !enrollInfo.total) {
-    return <Text  style={{fontSize: 50}}>유효한 회원권이 없습니다.</Text>;
+    return <Text  style={{fontSize: 50}}>{t('user.enroll_info_failed')}</Text>;
   }
 
   const endDateStr = enrollInfo.enroll_list[0].end_date;
@@ -489,24 +490,25 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
   const isLandscape = window.width > window.height;
 
   return (
-    <SafeAreaView style={[styles.container, {paddingTop: insets.top}]}> 
+    <SafeAreaView style={[styles.container, {paddingTop: insets.top}]}>
+      <I18nextProvider i18n={i18n}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => { setSettingsTab('ws'); setSettingsVisible(true); }} style={styles.hamburger}>
           <View style={styles.hamLine} />
           <View style={styles.hamLine} />
           <View style={styles.hamLine} />
         </TouchableOpacity>
-        <Text style={styles.title}>전화번호 입력</Text>
+        <Text style={styles.title}>{t('menu.phone')}</Text>
         <View style={{width: 40}} />
       </View>
 
       {userInfo ? (
         <View style={styles.content}>
-          <Text style={styles.label}>사용자 정보</Text>
+          <Text style={styles.label}>{t('user.info')}</Text>
           <View style={{marginVertical: 16, padding: 16, backgroundColor: '#f2f2f2', borderRadius: 8}}>
               <View  style={{marginBottom: 8}}>
-                <Text style={{fontWeight: '600', fontSize: 30}}>회원명 : {userInfo.name}</Text>
-                <Text style={{fontWeight: '400', fontSize: 30}}>회원번호 : {userInfo.branch_id}#{userInfo.id}</Text>                
+                <Text style={{fontWeight: '600', fontSize: 30}}>{t('user.name')}: {userInfo.name}</Text>
+                <Text style={{fontWeight: '400', fontSize: 30}}>{t('user.id')} : {userInfo.branch_id}#{userInfo.id}</Text>                
                 {renderEnrollInfo(enrollInfo)}
               </View>
           </View>
@@ -515,8 +517,8 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
   onPress={() => {setUserInfo(null);  setDigits('');}}
 >
 <Text style={styles.sendButtonText}>
-  입력창으로 돌아가기
-  {showCountdown ? ` (${countdown}초)` : ''}
+  {t('user.return')}
+  {showCountdown ? ` (${countdown}${t('common.seconds')})` : ''}
 </Text>
 </TouchableOpacity>
         </View>
@@ -531,7 +533,7 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
         }
       >
  <View style={[styles.content, { flex: 1 }]}> 
-          <Text style={styles.label}>전화번호 (010 - xxxx - xxxx)</Text>
+          <Text style={styles.label}>{t("user.phone_number")} (010 - xxxx - xxxx)</Text>
           <Text style={styles.display}>{formatPhone(digits)}</Text>
           <TextInput
             style={styles.input}
@@ -540,11 +542,11 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
             keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
             maxLength={8}
             ref={inputRef}
-            placeholder="8자리 번호만 입력하세요"
+            placeholder={t("user.phone_number_placeholder")}
           />
 
     <View style={styles.statusRow}>
-      <Text style={styles.statusText}>접속상태:  <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]} /></Text>
+      <Text style={styles.statusText}>{t("user.connection_status")}:  <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]} /></Text>
     </View>          
         </View>
 
@@ -589,9 +591,9 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
       style={[styles.key, styles.keyAction]}
       onPress={() => {
         if (digits.length === 8) sendPhone(digits);
-        else Alert.alert('입력 오류', '8자리 번호를 입력해야 합니다.');
+        else Alert.alert(t('user.error_invalid_phone'));
       }}>
-      <Text style={styles.keyText}>전송</Text>
+      <Text style={styles.keyText}>{t('user.submit')}</Text>
     </TouchableOpacity>
   </View>
 </View>
@@ -606,18 +608,18 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
               style={[styles.tabBtn, settingsTab === 'ws' && styles.tabBtnActive]}
               onPress={() => setSettingsTab('ws')}
             >
-              <Text style={[styles.tabBtnText, settingsTab === 'ws' && styles.tabBtnTextActive]}>웹소켓 설정</Text>
+              <Text style={[styles.tabBtnText, settingsTab === 'ws' && styles.tabBtnTextActive]}>{t('settings.ws')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tabBtn, settingsTab === 'logout' && styles.tabBtnActive]}
               onPress={() => setSettingsTab('logout')}
             >
-              <Text style={[styles.tabBtnText, settingsTab === 'logout' && styles.tabBtnTextActive]}>로그아웃</Text>
+              <Text style={[styles.tabBtnText, settingsTab === 'logout' && styles.tabBtnTextActive]}>{t('settings.logout')}</Text>
             </TouchableOpacity>
           </View>
           {settingsTab === 'ws' ? (
 <>
-  <Text style={styles.modalTitle}>웹소켓 주소</Text>
+  <Text style={styles.modalTitle}>{t('settings.ws_address')}</Text>
 
   <TextInput
     style={[
@@ -646,7 +648,7 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
       onPress={saveSettings}
       disabled={!!urlError}
     >
-      <Text style={styles.modalBtnText}>저장</Text>
+      <Text style={styles.modalBtnText}>{t('settings.save')}</Text>
     </TouchableOpacity>
 
     <TouchableOpacity
@@ -658,7 +660,7 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
       }}
     >
       <Text style={[styles.modalBtnText, { color: '#000' }]}>
-        취소
+        {t('settings.cancel')}
       </Text>
     </TouchableOpacity>
   </View>
@@ -666,28 +668,29 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
 
           ) : (
             <>
-              <Text style={styles.modalTitle}>로그아웃</Text>
-              <Text style={{marginBottom: 24, color: '#666'}}>로그아웃 시 모든 인증 정보가 삭제됩니다.</Text>
+              <Text style={styles.modalTitle}>{t('settings.logout')}</Text>
+              <Text style={{marginBottom: 24, color: '#666'}}>{t('settings.logout_warning')}</Text>
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   style={[styles.modalBtn, {backgroundColor: '#d00'}]}
                   onPress={handleLogout}
                   disabled={loggingOut}
                 >
-                  <Text style={[styles.modalBtnText, {color: '#fff'}]}>{loggingOut ? '로그아웃 중...' : '로그아웃'}</Text>
+                  <Text style={[styles.modalBtnText, {color: '#fff'}]}>{loggingOut ? t('settings.logging_out') : t('settings.logout')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, {backgroundColor: '#ddd'}]}
                   onPress={() => setSettingsVisible(false)}
                   disabled={loggingOut}
                 >
-                  <Text style={[styles.modalBtnText, {color: '#000'}]}>취소</Text>
+                  <Text style={[styles.modalBtnText, {color: '#000'}]}>{t('settings.cancel')}</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
         </SafeAreaView>
       </Modal>
+      </I18nextProvider>
     </SafeAreaView>
   );
 }

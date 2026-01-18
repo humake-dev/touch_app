@@ -1,0 +1,64 @@
+  // i18n/locales/en.json
+  {
+    "common": {
+      "error": "Error",
+      "success": "Success",
+      "seconds": "sec"
+    },
+    "menu": {
+      "login": "Login",
+      "logout": "Logout",
+      "phone": "Enter Phone Number",
+      "settings": "Settings"
+    },
+    "login": {
+      "username": "Username",
+      "password": "Password",
+      "loading": "Logging in...",
+      "submit": "Login",
+      "error": {
+        "empty": "Please enter your username and password.",
+        "failed": "Login failed.",
+        "network": "A network error has occurred.",
+        "incomplete": "You must enter an 8-digit number."
+      }
+    },
+    "settings": {
+      "ws": "WebSocket Settings",
+      "logout": "Logout",
+      "ws_address": "WebSocket Address",
+      "logout_warning": "Logging out will delete all authentication information.",
+      "logging_out": "Logging out...",
+      "save": "Save",
+      "cancel": "Cancel",
+      "ws_error_empty": "Please enter the WebSocket address.",
+      "ws_error_invalid": "Must start with ws:// or wss://.",
+      "ws_saved": "WebSocket address saved. Attempting to reconnect.",
+      "ws_save_failed": "Failed to save settings.",
+      "logout_failed": "Logout failed."
+    },
+    "user": {
+      "id" : "Member ID",
+      "enroll_info": "Enrollment Information",
+      "name": "Name",
+      "info": "Member Information",
+      "phone_number": "Phone Number",
+      "phone_number_placeholder": "Enter without '-'",
+      "connection_status": "Connection Status",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "enroll_info_failed": "Failed to Retrieve Enrollment Information",
+      "enroll_info_failed_msg": "Could not retrieve the enrollment information for this member.",
+      "return" : "Back",
+      "submit": "Submit",
+      "error_invalid_phone": "Please enter a valid phone number."
+    },
+    "error": {
+    "users_not_found": "User not found.",
+    "invalid_credentials": "Invalid ID or password.",
+    "user_disabled": "This account has been disabled.",
+    "token_expired": "Your session has expired. Please log in again.",
+    "permission_denied": "You do not have permission.",
+    "unknown": "An error occurred while processing your request."
+  }
+}

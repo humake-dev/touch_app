@@ -1,0 +1,64 @@
+// i18n/locales/ko.json
+{
+    "common": {
+      "error": "오류",
+      "success": "성공",
+      "seconds": "초"
+    },
+    "menu": {
+      "login": "로그인",
+      "logout": "로그아웃",
+      "phone": "전화번호 입력",
+      "settings": "설정",
+    },
+    "login": {
+      "username": "아이디",
+      "password": "비밀번호",
+      "loading": "로그인 중...",
+      "submit": "로그인",
+      "error": {
+        "empty": "아이디와 비밀번호를 입력하세요.",
+        "failed": "로그인에 실패했습니다.",
+        "network": "네트워크 오류가 발생했습니다.",
+        "incomplete": "8자리 번호를 입력해야 합니다."
+      }
+    },
+    "settings": {
+      "ws": "웹소켓 설정",
+      "logout": "로그아웃",
+      "ws_address": "웹소켓 주소",
+      "logout_warning": "로그아웃 시 모든 인증 정보가 삭제됩니다.",
+      "logging_out": "로그아웃 중...",
+      "save": "저장",
+      "cancel": "취소",
+      "ws_error_empty": "웹소켓 주소를 입력하세요.",
+      "ws_error_invalid": "ws:// 또는 wss:// 로 시작해야 합니다.",
+      "ws_saved": "웹소켓 주소가 저장되었습니다. 재연결을 시도합니다.",
+      "ws_save_failed": "설정 저장에 실패했습니다.",
+      "logout_failed": "로그아웃 실패"
+    },
+    "user": {
+      "id" : "회원 ID",
+      "enroll_info": "등록 정보",
+      "name": "이름",
+      "info": "회원정보",
+      "phone_number": "전화번호",
+      "phone_number_placeholder": "'-' 없이 입력",
+      "connection_status": "연결 상태",
+      "connected": "연결됨",
+      "disconnected": "연결 끊김",
+      "enroll_info_failed": "유효한 회원권이 없습니다.",
+      "enroll_info_failed_msg": "해당 회원의 등록정보를 받아오지 못했습니다.",
+      "return" : "돌아가기",
+      "submit": "전송",
+      "error_invalid_phone": "유효한 전화번호를 입력하세요."
+    },
+    "error": {
+    "users_not_found": "사용자를 찾을 수 없습니다.",
+    "invalid_credentials": "아이디 또는 비밀번호가 올바르지 않습니다.",
+    "user_disabled": "비활성화된 계정입니다.",
+    "token_expired": "로그인이 만료되었습니다. 다시 로그인해 주세요.",
+    "permission_denied": "접근 권한이 없습니다.",
+    "unknown": "요청 처리 중 오류가 발생했습니다."
+  }
+}
