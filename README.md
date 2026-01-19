@@ -23,10 +23,20 @@ The app is designed to run on a **shared tablet device** placed at the gym entra
 * **React Native**
 * JavaScript / TypeScript
 * REST API integration (Gym Management API)
-* Axios / Fetch API
+* Fetch API
 * Android Tablet (primary target)
 
 ---
+
+## 📱 ScreenShot
+
+![앱 화면](screenshot/screenshot2.jpg)
+![앱 화면](screenshot/screenshot3.jpg)
+![앱 화면](screenshot/screenshot3.jpg)
+
+---
+
+
 
 
 ## 🚀 Getting Started
