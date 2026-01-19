@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
   Modal,
   Alert,
   Platform,
@@ -23,6 +24,7 @@ import { BASE_URL } from './Config';
 import i18n from './i18n/i18n';
 import { useTranslation } from 'react-i18next'; 
 import { t } from 'i18next';
+import { AppError } from './src/utils/AppError';
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
@@ -87,6 +89,9 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const usernameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+
   const handleLogin = async () => {
     setError('');
     if (!id || !pw) {
@@ -100,7 +105,7 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
       param.append('username', id);
       param.append('password', pw);
 
-      console.log(`${BASE_URL}`+'/admin_login');
+     // console.log(`${BASE_URL}`+'/admin_login');
 
       const res = await fetch(`${BASE_URL}`+'/admin_login', {
         method: 'POST',
@@ -125,8 +130,11 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         setError(data.message || t('login.error.failed'));
       }
     } catch (err) {
-      console.log('LOGIN ERROR', err);
-      setError(err?.message || t('login.error.network'));
+  if (err instanceof AppError) {
+    setError(t(err.message));
+  } else {
+    setError(t('login.error.network'));
+  }
     } finally {
       setLoading(false);
     }
@@ -138,18 +146,24 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
       <View style={{ width: '85%', padding: 24, borderRadius: 12, backgroundColor: '#f7f7f7', elevation: 2 }}>
         <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 24, textAlign: 'center' }}>{t('menu.login')}</Text>
         <TextInput
+          ref={usernameRef}
           style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 12, fontSize: 16, marginBottom: 16, backgroundColor: '#fff' }}
           placeholder={t('login.username')}
           autoCapitalize="none"
           value={id}
           onChangeText={setId}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
         />
         <TextInput
+          ref={passwordRef}
           style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 12, fontSize: 16, marginBottom: 16, backgroundColor: '#fff' }}
           placeholder={t("login.password")}
-          secureTextEntry
           value={pw}
           onChangeText={setPw}
+          secureTextEntry
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
         />
         {error ? <Text style={{ color: '#d00', marginBottom: 8, textAlign: 'center' }}>{error}</Text> : null}
         <TouchableOpacity
@@ -172,7 +186,7 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
   const [wsUrl, setWsUrl] = useState<string | null>(null);
 
 
-
+    const windowWidth = Dimensions.get('window').width;
   const [connectionState, setConnectionState] = useState<string>('closed');
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -327,8 +341,6 @@ useEffect(() => {
   Keyboard.dismiss();  
   inputRef.current?.blur();  
   
-
-
   const enrollRes = await authFetch(`/enrolls?user_id=${user.id}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -339,11 +351,7 @@ useEffect(() => {
   let enroll=await enrollRes.json();
   if (!enroll) return false;
 
-  console.log(enroll);
-
   setEnrollInfo(enroll);
-
-
 
       authFetch(`/entrances`, { method: 'POST',
       headers: {
@@ -532,6 +540,7 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
             : { flex: 1, flexDirection: 'column' }
         }
       >
+
  <View style={[styles.content, { flex: 1 }]}> 
           <Text style={styles.label}>{t("user.phone_number")} (010 - xxxx - xxxx)</Text>
           <Text style={styles.display}>{formatPhone(digits)}</Text>
@@ -726,8 +735,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  statusRow: {marginTop: 20},
-  statusText: {color: '#444', marginTop: 4},
   sendButtonText: {color: '#fff'},
   modalContainer: {flex: 1, padding: 20, backgroundColor: '#fff'},
   modalTitle: {fontSize: 20, fontWeight: '700', marginBottom: 12},
@@ -751,6 +758,7 @@ const styles = StyleSheet.create({
   tabBtnTextActive: {color: '#007aff', fontWeight: '700'},
 
   statusRow: {
+    marginTop: 20,
     flexDirection: 'row',
     alignItems: 'center',
     margin: 10,
@@ -762,6 +770,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   statusText: {
+    color: '#444',
+    marginTop: 4,
     fontSize: 16,
   },  
 
@@ -794,4 +804,14 @@ keyText: {
   fontWeight: '600',
 },
 keyAction: {backgroundColor: '#d0e8ff'},
+
+      imageContainer: {
+        width: '100%',
+        height: 200,
+        backgroundColor: '#f0f0f0',
+        overflow: 'hidden',
+      },
+      mainImage: {
+        height: 200,
+      },
 });
