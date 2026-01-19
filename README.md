@@ -22,9 +22,10 @@ The app is designed to run on a **shared tablet device** placed at the gym entra
 
 * **React Native**
 * JavaScript / TypeScript
-* REST API integration (Gym Management API)
+* REST API integration (FastAPI backend)
+* JWT Authentication
+* React Navigation
 * Fetch API
-* Android Tablet (primary target)
 
 ---
 
