@@ -60,5 +60,8 @@
     "token_expired": "로그인이 만료되었습니다. 다시 로그인해 주세요.",
     "permission_denied": "접근 권한이 없습니다.",
     "unknown": "요청 처리 중 오류가 발생했습니다."
+  },
+  "deadline": {
+    "remaining": "종료일 ({{date}})까지 <1>{{days}}</1>일 남았습니다"
   }
 }

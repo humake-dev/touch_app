@@ -14,7 +14,7 @@ import {
   useWindowDimensions
 } from 'react-native';
 import {SafeAreaView, SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
-import {I18nextProvider} from 'react-i18next';
+import {I18nextProvider, Trans, useTranslation} from 'react-i18next';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from "jwt-decode";
@@ -22,8 +22,6 @@ import authFetch from './src/utils/api';
 import { handleApiError } from './src/utils/errorHandler';
 import { BASE_URL } from './Config';
 import i18n from './i18n/i18n';
-import { useTranslation } from 'react-i18next'; 
-import { t } from 'i18next';
 import { AppError } from './src/utils/AppError';
 
 const STORAGE_KEY_WS = 'app_ws_url';
@@ -33,7 +31,7 @@ const DEFAULT_WS_URL = Config.WS_URL;
 
 export default function App() {
   useKeepAwake();
-
+  const { t } = useTranslation();
   const [isReady, setIsReady] = useState(false);
   const [hasBranch, setHasBranch] = useState(false);
 
@@ -180,13 +178,14 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 }
 
 function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
+  const { t } = useTranslation();
+
   const insets = useSafeAreaInsets();
 
   const [digits, setDigits] = useState(''); // 8 digits
   const [wsUrl, setWsUrl] = useState<string | null>(null);
 
-
-    const windowWidth = Dimensions.get('window').width;
+  const windowWidth = Dimensions.get('window').width;
   const [connectionState, setConnectionState] = useState<string>('closed');
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -199,12 +198,12 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
   const [enrollInfo, setEnrollInfo] = useState<any | null>(null); // user 정보 상태 
 
   const [countdown, setCountdown] = useState(5);
-const [showCountdown, setShowCountdown] = useState(false);
-
-const intervalRef = useRef(null);
-const timeoutRef = useRef(null);
-const inputRef = useRef(null);
-const sendingRef = useRef(false);
+  const [showCountdown, setShowCountdown] = useState(false);
+  
+  const intervalRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const inputRef = useRef(null);
+  const sendingRef = useRef(false);
 
 
 useEffect(() => {
@@ -465,7 +464,7 @@ const renderEnrollInfo = (enrollInfo) => {
 
   const endDate = new Date(endDateStr);
 
-const formattedDate = endDate.toLocaleDateString("ko-KR", {
+const formattedDate = endDate.toLocaleDateString(i18n.language, {
   year: "numeric",
   month: "long",
   day: "numeric"
@@ -483,13 +482,15 @@ const formattedDate = endDate.toLocaleDateString("ko-KR", {
     (toUtcDate(endDateStr) - toUtcDate(todayStr)) / 86400000;
 
   return (
-    <Text style={{fontSize: 50}}>
-      종료일 ({formattedDate})까지{' '}
-      <Text style={{ fontSize: 70, fontWeight: '700' }}>
-        {Math.max(0, diffDays)}
-      </Text>
-      일 남았습니다.
-    </Text>
+    <Text style={{ fontSize: 50 }}>
+<Trans
+  i18nKey="deadline.remaining"
+  values={{ date: formattedDate, days: Math.max(0, diffDays) }}
+  components={[
+    <Text />,
+    <Text style={{ fontSize: 70, fontWeight: '700' }} />
+  ]}
+/></Text>
   );
 };
 
