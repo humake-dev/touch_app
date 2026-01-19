@@ -59,7 +59,7 @@ cd gym-checkin-kiosk
 npm install
 ```
 
-또는
+OR (또는)
 
 ```bash
 yarn install
