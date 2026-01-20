@@ -344,9 +344,6 @@ const sendPhone = async (digits: string) => {
       return false;
     }
 
-
-
-
   setUserInfo(user);
   Keyboard.dismiss();  
   inputRef.current?.blur();  
@@ -380,7 +377,15 @@ const sendPhone = async (digits: string) => {
       wsRef.current.send(user.phone); // 기존대로 8자리만 전송
       setDigits('');
   } catch (e) {
+    if(e instanceof AppError) {      
+      const status = e?.status;
+      
+      if (status === 404 && digits.length !== 8) {
+        return;      
+      }
+      
       Alert.alert(t(e.message) || '오류 발생');
+    }
   } finally {
     // ⏱️ 약간의 쿨타임 후 해제
     setTimeout(() => {
