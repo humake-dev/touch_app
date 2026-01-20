@@ -182,7 +182,7 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
 
   const insets = useSafeAreaInsets();
 
-  const [digits, setDigits] = useState(''); // 8 digits
+  const [digits, setDigits] = useState(''); 
   const [wsUrl, setWsUrl] = useState<string | null>(null);
 
   const windowWidth = Dimensions.get('window').width;
@@ -247,18 +247,6 @@ const onChangeUrl = (text: string) => {
   }
 };
 
-  // 계산기 스타일 입력을 위한 핸들러
-const onPressDigit = (d: string) => {
-  setDigits(prev => {
-    if (prev.length >= 8) return prev;
-    const next = prev + d;
-    if (next.length === 8) {
-      // 자동 전송(약간의 딜레이로 UI 반응 보장)
-      setTimeout(() => sendPhone(next), 50);
-    }
-    return next;
-  });
-};
 
 const onBackspace = () => {
   setDigits(prev => prev.slice(0, -1));
@@ -311,30 +299,53 @@ useEffect(() => {
   };
 }, [wsUrl]);
 
-  const handleChange = (text: string) => {
-    const onlyDigits = text.replace(/[^0-9]/g, '');
-    const truncated = onlyDigits.slice(0, 8);
-    setDigits(truncated);
-    if (truncated.length === 8) {
-      sendPhone(truncated);
-    }
-  };
 
-  const sendPhone = async (eightDigits: string) => {
-  if (sendingRef.current) return; // 🔒 이미 전송 중이면 무시
+// 숫자 입력 핸들러 (계산기 스타일)
+const onPressDigit = (d: string) => {
+  setDigits(prev => {
+    if (prev.length >= 8) return prev; // 최대 8자리 제한
+    const next = prev + d;
+
+    // 4자리 이상이면 자동 전송
+    if (next.length >= 4) {
+      setTimeout(() => sendPhone(next), 50); // 약간 딜레이
+    }
+    return next;
+  });
+};
+
+const handleChange = (text: string) => {
+  const onlyDigits = text.replace(/[^0-9]/g, '');
+  const truncated = onlyDigits.slice(0, 8);
+  setDigits(truncated);
+
+  if (truncated.length >= 4) { // 4자리 이상이면 전송
+    sendPhone(truncated);
+  }
+};
+
+const sendPhone = async (digits: string) => {
+  if (sendingRef.current) return; 
   sendingRef.current = true;
 
-    const phone = '010' + eightDigits;
+  const phone = digits.length === 8 ? '010' + digits : digits; // 8자리면 그대로, 아니면 앞에 '010' 붙이기
 
-    try {
-      const userRes = await authFetch(`/users?phone=${phone}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-  
-  let user=await userRes.json();
-  if (!user) return false;  
+
+  try {
+    const userRes = await authFetch(`/users?phone=${phone}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    let user = await userRes.json();
+
+    // 단일 객체가 아니면 false
+    if (!user || Array.isArray(user)) {
+      sendingRef.current = false;
+      return false;
+    }
+
+
+
 
   setUserInfo(user);
   Keyboard.dismiss();  
@@ -366,7 +377,7 @@ useEffect(() => {
        // Alert.alert('웹소켓 미연결', '서버에 연결되어 있지 않습니다. 설정에서 주소를 확인하세요.');
         return;
       }
-      wsRef.current.send(eightDigits); // 기존대로 8자리만 전송
+      wsRef.current.send(user.phone); // 기존대로 8자리만 전송
       setDigits('');
   } catch (e) {
       Alert.alert(t(e.message) || '오류 발생');
@@ -382,9 +393,9 @@ useEffect(() => {
     // input: 최대 8자리 숫자 -> 010 - xxxx - xxxx
     const a = input.slice(0, 4);
     const b = input.slice(4, 8);
-    if (!a) return '010 - ';
-    if (!b) return `010 - ${a}`;
-    return `010 - ${a} - ${b}`;
+    if (!a) return '';
+    if (!b) return ` ${a}`;
+    return ` ${a} - ${b}`;
   };
 
   const isValidWsUrl = (url: string) => {
