@@ -23,6 +23,7 @@ import { handleApiError } from './src/utils/errorHandler';
 import { BASE_URL } from './Config';
 import i18n from './i18n/i18n';
 import { AppError } from './src/utils/AppError';
+import Sound from 'react-native-sound';
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
@@ -205,6 +206,17 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
   const inputRef = useRef(null);
   const sendingRef = useRef(false);
 
+  const alarm = new Sound('a269.mp3', Sound.MAIN_BUNDLE, (error) => {
+    if (error) console.log('Sound load failed', error);
+  });
+
+  const welcome = new Sound('dd.mp3', Sound.MAIN_BUNDLE, (error) => {
+    if (error) console.log('Sound load failed', error);
+  });
+
+  const nonono = new Sound('e776.mp3', Sound.MAIN_BUNDLE, (error) => {
+    if (error) console.log('Sound load failed', error);
+  });  
 
 useEffect(() => {
   if (!userInfo) return;
@@ -346,7 +358,8 @@ const sendPhone = async (digits: string) => {
 
   setUserInfo(user);
   Keyboard.dismiss();  
-  inputRef.current?.blur();  
+  inputRef.current?.blur();
+
   
   const enrollRes = await authFetch(`/enrolls?user_id=${user.id}`, {
     headers: {
@@ -356,10 +369,31 @@ const sendPhone = async (digits: string) => {
 
 
   let enroll=await enrollRes.json();
-  if (!enroll) return false;
+  if (!enroll) {
+    return false;
+  }
 
   setEnrollInfo(enroll);
 
+  console.log(enroll);
+  if(enroll.total > 0) {
+    const endDateStr = enroll.enroll_list[0].end_date;
+    const diffDays = diffDaysFromToday(endDateStr);
+    
+    if(diffDays < 0)  {
+    nonono.play((success) => {
+      if (!success) console.log('Playback failed');
+    });
+    } else {
+      welcome.play((success) => {
+        if (!success) console.log('Playback failed');
+      });
+    }
+  } else {
+    nonono.play((success) => {
+      if (!success) console.log('Playback failed');
+    });
+  }
       authFetch(`/entrances`, { method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -383,8 +417,15 @@ const sendPhone = async (digits: string) => {
       if (status === 404 && digits.length !== 8) {
         return;      
       }
+
+           alarm.play((success) => {
+    console.log('good');
+      if (!success) console.log('Playback failed');
+    });   
       
       Alert.alert(t(e.message) || '오류 발생');
+
+
     }
   } finally {
     // ⏱️ 약간의 쿨타임 후 해제
@@ -470,32 +511,34 @@ const sendPhone = async (digits: string) => {
   };
 
 
+const formatDate = (dateStr, locale) =>
+  new Date(dateStr).toLocaleDateString(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+
+const diffDaysFromToday = (dateStr) => {
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const toUtcDate = (d) => {
+    const [y, m, day] = d.split('-').map(Number);
+    return Date.UTC(y, m - 1, day);
+  };
+
+  return (toUtcDate(dateStr) - toUtcDate(todayStr)) / 86400000;
+};
 
 const renderEnrollInfo = (enrollInfo) => {
   if (!enrollInfo || !enrollInfo.total) {
+
     return <Text  style={{fontSize: 50}}>{t('user.enroll_info_failed')}</Text>;
   }
 
-  const endDateStr = enrollInfo.enroll_list[0].end_date;
+const endDateStr = enrollInfo.enroll_list[0].end_date;
 
-  const endDate = new Date(endDateStr);
-
-const formattedDate = endDate.toLocaleDateString(i18n.language, {
-  year: "numeric",
-  month: "long",
-  day: "numeric"
-});
-
-  // 오늘 날짜를 문자열로 고정 (로컬/UTC 흔들림 제거)
-  const todayStr = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-
-  const toUtcDate = (dateStr) => {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return Date.UTC(y, m - 1, d);
-  };
-
-  const diffDays =
-    (toUtcDate(endDateStr) - toUtcDate(todayStr)) / 86400000;
+const formattedDate = formatDate(endDateStr, i18n.language);
+const diffDays = diffDaysFromToday(endDateStr);
 
   return (
     <Text style={{ fontSize: 50 }}>
@@ -817,7 +860,7 @@ key: {
 
 
 keyText: {
-  fontSize: 45,
+  fontSize: 50,
   fontWeight: '400',
 },
 keyAction: {backgroundColor: '#d0e8ff'},
