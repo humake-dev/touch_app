@@ -817,8 +817,8 @@ key: {
 
 
 keyText: {
-  fontSize: 20,
-  fontWeight: '600',
+  fontSize: 45,
+  fontWeight: '400',
 },
 keyAction: {backgroundColor: '#d0e8ff'},
 
