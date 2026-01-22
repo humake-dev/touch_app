@@ -206,18 +206,6 @@ function AppContent({ onForceLogout }: { onForceLogout: () => void }) {
   const inputRef = useRef(null);
   const sendingRef = useRef(false);
 
-  const alarm = new Sound('a269.mp3', Sound.MAIN_BUNDLE, (error) => {
-    if (error) console.log('Sound load failed', error);
-  });
-
-  const welcome = new Sound('dd.mp3', Sound.MAIN_BUNDLE, (error) => {
-    if (error) console.log('Sound load failed', error);
-  });
-
-  const nonono = new Sound('e776.mp3', Sound.MAIN_BUNDLE, (error) => {
-    if (error) console.log('Sound load failed', error);
-  });  
-
 useEffect(() => {
   if (!userInfo) return;
 
@@ -375,24 +363,17 @@ const sendPhone = async (digits: string) => {
 
   setEnrollInfo(enroll);
 
-  console.log(enroll);
   if(enroll.total > 0) {
     const endDateStr = enroll.enroll_list[0].end_date;
     const diffDays = diffDaysFromToday(endDateStr);
-    
+
     if(diffDays < 0)  {
-    nonono.play((success) => {
-      if (!success) console.log('Playback failed');
-    });
+      playSound('a269.mp3');
     } else {
-      welcome.play((success) => {
-        if (!success) console.log('Playback failed');
-      });
+      playSound('dd.mp3');
     }
   } else {
-    nonono.play((success) => {
-      if (!success) console.log('Playback failed');
-    });
+      playSound('a269.mp3');
   }
       authFetch(`/entrances`, { method: 'POST',
       headers: {
@@ -417,15 +398,8 @@ const sendPhone = async (digits: string) => {
       if (status === 404 && digits.length !== 8) {
         return;      
       }
-
-           alarm.play((success) => {
-    console.log('good');
-      if (!success) console.log('Playback failed');
-    });   
-      
+      playSound('e1110.mp3');
       Alert.alert(t(e.message) || '오류 발생');
-
-
     }
   } finally {
     // ⏱️ 약간의 쿨타임 후 해제
@@ -509,6 +483,21 @@ const sendPhone = async (digits: string) => {
         return 'black';
     }
   };
+
+const playSound = (filename) => {
+  const sound = new Sound(filename, Sound.MAIN_BUNDLE, (error) => {
+    if (error) {
+      console.log('failed to load sound', error);
+      return;
+    }
+
+    sound.play((success) => {
+      if (!success) console.log('Playback failed');
+      sound.release(); // 재생 끝나면 바로 정리
+    });
+  });
+};
+
 
 
 const formatDate = (dateStr, locale) =>
@@ -860,7 +849,7 @@ key: {
 
 
 keyText: {
-  fontSize: 50,
+  fontSize: 55,
   fontWeight: '400',
 },
 keyAction: {backgroundColor: '#d0e8ff'},
