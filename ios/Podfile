@@ -30,11 +30,14 @@ target 'humake_touch' do
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # ✅ C++17 강제
-      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      # ✅ C++20 강제 (핵심)
+      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
       config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
 
-      # ✅ AVFoundation 링크 (이전 문제)
+      # ✅ iOS 최소 타겟 (Hermes 안정성)
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+
+      # ✅ AVFoundation 링크 (RNSound 문제)
       flags = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
       unless flags.include?('AVFoundation')
         config.build_settings['OTHER_LDFLAGS'] = "#{flags} -framework AVFoundation"
