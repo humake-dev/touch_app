@@ -500,6 +500,16 @@ const playSound = (filename) => {
 
 
 
+
+const now = new Date();
+
+
+const formattedToday = new Intl.DateTimeFormat(i18n.language, {
+year: 'numeric',
+month: '2-digit',
+day: '2-digit',
+}).format(now);
+
 const formatDate = (dateStr, locale) =>
   new Date(dateStr).toLocaleDateString(locale, {
     year: "numeric",
@@ -603,9 +613,26 @@ const diffDays = diffDaysFromToday(endDateStr);
             placeholder={t("user.phone_number_placeholder")}
           />
 
-    <View style={styles.statusRow}>
-      <Text style={styles.statusText}>{t("user.connection_status")}:  <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]} /></Text>
-    </View>          
+<View style={styles.statusContainer}>
+<View style={styles.row}>
+<Text style={styles.currentDateText}>
+{t('current_date')}: {formattedToday}
+</Text>
+</View>
+
+
+<View style={styles.row}>
+<Text style={styles.statusText}>
+{t('user.connection_status')}:
+</Text>
+<View
+style={[
+styles.statusBox,
+{ backgroundColor: getStatusColor() },
+]}
+/>
+</View>
+</View>       
         </View>
 
         <View
@@ -806,23 +833,29 @@ const styles = StyleSheet.create({
   tabBtnText: {fontSize: 16, color: '#888'},
   tabBtnTextActive: {color: '#007aff', fontWeight: '700'},
 
-  statusRow: {
-    marginTop: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 10,
-  },
-  statusBox: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  statusText: {
-    color: '#444',
-    marginTop: 4,
-    fontSize: 16,
-  },  
+statusContainer: {
+marginTop: 20,
+margin: 10,
+},
+row: {
+flexDirection: 'row',
+alignItems: 'center',
+marginTop: 6,
+},
+currentDateText: {
+color: '#444',
+fontSize: 16,
+},
+statusText: {
+color: '#444',
+fontSize: 16,
+marginRight: 8,
+},
+statusBox: {
+width: 16,
+height: 16,
+borderRadius: 4,
+},
 
   /* keypad styles */
   /* keypad styles */

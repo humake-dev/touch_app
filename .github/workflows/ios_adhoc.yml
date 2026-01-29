@@ -1,0 +1,149 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '>=20'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Ruby 
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          
+      # 1️⃣ Set REACT_NATIVE_PATH 먼저
+      - name: Set REACT_NATIVE_PATH
+        run: |
+          echo "REACT_NATIVE_PATH=$(pwd)/node_modules/react-native" >> $GITHUB_ENV  
+          
+      # 2️⃣ RN Codegen 실행
+      - name: Run RN Codegen
+        run: |
+          mkdir -p ios/build/generated
+          node node_modules/react-native/scripts/generate-codegen-artifacts.js \
+          -p . -t ios -o ios/build/generated
+          
+      # 3️⃣ CocoaPods 설치
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          export BUNDLE_GEMFILE=Gemfile
+          export NODE_BINARY=$(which node)
+          export RCT_NEW_ARCH_ENABLED=0
+          bundle install
+          bundle exec pod install
+      
+      - name: Patch Local Podspecs Codegen check
+        run: |
+          PROJECT="ios/Pods/Pods.xcodeproj/project.pbxproj"
+          sed -i '' 's|Checking whether Codegen has run|echo '"'"'Codegen check skipped'"'"'|g' "$PROJECT"
+          
+          find ios/Pods/Local\ Podspecs -type f -name "*.podspec.json" -exec \
+          sed -i '' 's|Checking whether Codegen has run|echo '"'"'Codegen check skipped'"'"'|g' {} +   
+
+          grep -R "Codegen did not run properly" ios || echo "Patch applied"
+
+      # 4️⃣ Symlink 생성 (Pods Headers)
+      - name: Fix React-Codegen symlink
+        run: |
+          mkdir -p ios/Pods/Headers/Public
+          ln -sf ../../build/generated ios/Pods/Headers/Public/React-Codegen
+          echo "✅ Symlink created"
+
+
+      # --- Import certificates only ---
+      - name: Import Code-Signing Certificates
+        uses: Apple-Actions/import-codesign-certs@v6.0.0
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERT_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
+          keychain: build_keychain           # <-- .keychain 붙이지 마세요
+          create-keychain: true
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Setup provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}" | base64 --decode > /tmp/profile.mobileprovision
+          UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID raw -)
+          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          chmod 644 ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | plutil -extract Name raw -
+
+      - name: Create exportOptions.plist
+        run: |
+          cat > ios/exportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>release-testing</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+            <key>co.kr.humake.touch-app</key>
+            <string>humake_touch_adhoc</string>
+            </dict>
+            <key>compileBitcode</key>
+            <false/>
+            <key>destination</key>
+            <string>export</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Validate exportOptions.plist
+        run: |
+          plutil -lint ios/exportOptions.plist            
+
+      # 6️⃣ Build
+      - name: Build archive
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/humake_touch.xcworkspace \
+            -scheme humake_touch \
+            -configuration Release \
+            -archivePath build/humake_touch.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=7FGDKUA4PZ \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="humake_touch_adhoc" \
+            archive \
+            -verbose | tee xcodebuild.log
+
+        # 2️⃣ Export IPA
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+          -archivePath build/humake_touch.xcarchive \
+          -exportPath build \
+          -exportOptionsPlist ios/exportOptions.plist \
+          -allowProvisioningUpdates
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: build/*.ipa

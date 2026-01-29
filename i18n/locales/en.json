@@ -61,6 +61,7 @@
     "permission_denied": "You do not have permission.",
     "unknown": "An error occurred while processing your request."
   },
+  "current_date" : "Current Date",
   "deadline": {
     "remaining": "<1>{{days}}</1> days left until {{date}}"
   }
