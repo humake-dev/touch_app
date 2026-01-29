@@ -16,6 +16,7 @@ end
 
 target 'humake_touch' do
   config = use_native_modules!
+  framework 'AVFoundation'
 
   use_react_native!(
     :path => config[:reactNativePath],
