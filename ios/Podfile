@@ -16,6 +16,10 @@ end
 
 target 'humake_touch' do
   config = use_native_modules!
+  
+  pod 'react-native-sound', :path => '../node_modules/react-native-sound'
+
+  # 🔐 이 줄
   framework 'AVFoundation'
 
   use_react_native!(
