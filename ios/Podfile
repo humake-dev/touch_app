@@ -27,22 +27,16 @@ target 'humake_touch' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  post_install do |installer|
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
-    )
-
+post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      frameworks = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
-      unless frameworks.include?('AVFoundation')
-        config.build_settings['OTHER_LDFLAGS'] = "#{frameworks} -framework AVFoundation"
+      flags = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
+      unless flags.include?('AVFoundation')
+        config.build_settings['OTHER_LDFLAGS'] = "#{flags} -framework AVFoundation"
       end
     end
   end
+end
 
   end
 end
