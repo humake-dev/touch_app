@@ -1,3 +1,7 @@
+source 'https://cdn.cocoapods.org/'
+
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -16,11 +20,6 @@ end
 
 target 'humake_touch' do
   config = use_native_modules!
-  
-  pod 'react-native-sound', :path => '../node_modules/react-native-sound'
-
-  # 🔐 이 줄
-  framework 'AVFoundation'
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -35,5 +34,15 @@ target 'humake_touch' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      frameworks = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
+      unless frameworks.include?('AVFoundation')
+        config.build_settings['OTHER_LDFLAGS'] = "#{frameworks} -framework AVFoundation"
+      end
+    end
+  end
+
   end
 end
