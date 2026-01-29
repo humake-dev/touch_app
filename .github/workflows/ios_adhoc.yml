@@ -136,7 +136,8 @@ jobs:
       - name: Extract errors
         if: always()
         run: |
-          grep -E "error:|fatal error|CodeSign|Provisioning|No Accounts" xcodebuild.log || true              
+          grep -E "error:|fatal error|CodeSign|Provisioning|No Accounts" xcodebuild.log || true
+          grep -n "clang: error" -B 20 -A 20 xcodebuild.log   
 
         # 2️⃣ Export IPA
       - name: Export IPA
