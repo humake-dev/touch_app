@@ -21,20 +21,17 @@ end
 target 'humake_touch' do
   config = use_native_modules!
 
-  use_react_native!(
-    :path => config[:reactNativePath],
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/..",
-    :hermes_enabled => false
-  )
+use_react_native!(
+  :path => config[:reactNativePath],
+  :app_path => "#{Pod::Config.instance.installation_root}/..",
+  :fabric_enabled => false,
+  :hermes_enabled => true,
+  :production => true
+)
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # ✅ C++20 강제 (핵심)
-      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-      config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-
       # ✅ AVFoundation 링크 (RNSound 문제)
       flags = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
       unless flags.include?('AVFoundation')
