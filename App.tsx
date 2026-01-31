@@ -1,4 +1,3 @@
-import Config from 'react-native-config';
 import React, {useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
@@ -20,14 +19,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from "jwt-decode";
 import authFetch from './src/utils/api';
 import { handleApiError } from './src/utils/errorHandler';
-import { BASE_URL } from './Config';
+import { BASE_URL,WS_URL } from './Config';
 import i18n from './i18n/i18n';
 import { AppError } from './src/utils/AppError';
 import Sound from 'react-native-sound';
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
-const DEFAULT_WS_URL = Config.WS_URL;
+const DEFAULT_WS_URL = WS_URL;
 
 
 export default function App() {

@@ -32,11 +32,17 @@ use_react_native!(
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # ✅ AVFoundation 링크 (RNSound 문제)
+      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+
       flags = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
       unless flags.include?('AVFoundation')
         config.build_settings['OTHER_LDFLAGS'] = "#{flags} -framework AVFoundation"
       end
+
+      config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+      config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'humake_touch_adhoc'
+      config.build_settings['DEVELOPMENT_TEAM'] = '7FGDKUA4PZ'
     end
   end
 end
