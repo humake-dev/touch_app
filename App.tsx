@@ -22,7 +22,7 @@ import { handleApiError } from './src/utils/errorHandler';
 import { BASE_URL,WS_URL } from './Config';
 import i18n from './i18n/i18n';
 import { AppError } from './src/utils/AppError';
-import Sound from 'react-native-sound';
+// import Sound from 'react-native-sound';
 
 const STORAGE_KEY_WS = 'app_ws_url';
 const STORAGE_KEY_BRANCH = 'branch_id';
@@ -366,13 +366,13 @@ const sendPhone = async (digits: string) => {
     const endDateStr = enroll.enroll_list[0].end_date;
     const diffDays = diffDaysFromToday(endDateStr);
 
-    if(diffDays < 0)  {
+    /*if(diffDays < 0)  {
       playSound('a269.mp3');
     } else {
       playSound('dd.mp3');
-    }
+    } */
   } else {
-      playSound('a269.mp3');
+     // playSound('a269.mp3');
   }
       authFetch(`/entrances`, { method: 'POST',
       headers: {
@@ -397,7 +397,7 @@ const sendPhone = async (digits: string) => {
       if (status === 404 && digits.length !== 8) {
         return;      
       }
-      playSound('e1110.mp3');
+     // playSound('e1110.mp3');
       Alert.alert(t(e.message) || '오류 발생');
     }
   } finally {
@@ -483,7 +483,7 @@ const sendPhone = async (digits: string) => {
     }
   };
 
-const playSound = (filename) => {
+/*const playSound = (filename) => {
   const sound = new Sound(filename, Sound.MAIN_BUNDLE, (error) => {
     if (error) {
       console.log('failed to load sound', error);
@@ -495,7 +495,7 @@ const playSound = (filename) => {
       sound.release(); // 재생 끝나면 바로 정리
     });
   });
-};
+}; */
 
 
 
