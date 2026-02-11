@@ -17,7 +17,7 @@ end
 target 'humake_touch' do
   config = use_native_modules!
 
-  pod 'react-native-sound', :path => '../node_modules/react-native-sound'
+  pod 'RNSound', :path => '../node_modules/react-native-sound'
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -33,8 +33,11 @@ post_install do |installer|
   )
 
   installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)', '-ObjC']
+    if target.name == 'RNSound'
+      target.build_configurations.each do |config|
+        config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)']
+        config.build_settings['OTHER_LDFLAGS'] << '-framework AVFoundation'
+      end
     end
   end
 end
