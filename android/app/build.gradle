@@ -92,14 +92,6 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-    release {
-            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
-                storeFile file(MYAPP_RELEASE_STORE_FILE)
-                storePassword MYAPP_RELEASE_STORE_PASSWORD
-                keyAlias MYAPP_RELEASE_KEY_ALIAS
-                keyPassword MYAPP_RELEASE_KEY_PASSWORD
-            }
-        }        
     }
     buildTypes {
         debug {
@@ -125,5 +117,3 @@ dependencies {
         implementation jscFlavor
     }
 }
-
-apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"

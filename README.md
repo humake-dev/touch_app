@@ -1,118 +1,97 @@
-# 📟 Gym Check-in Kiosk App (React Native)
+This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-This project is a **React Native kiosk-style application** used at gym entrances.
-Members check in by **entering or tapping their phone number on a tablet**, allowing quick and simple attendance tracking without manual staff intervention.
+# Getting Started
 
-The app is designed to run on a **shared tablet device** placed at the gym entrance and communicates with a backend API to validate members and record check-in events in real time.
+> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
----
+## Step 1: Start Metro
 
-## ✨ Features
+First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
-* Tablet-based kiosk UI optimized for touch input
-* Phone number check-in (no login required)
-* Real-time attendance registration
-* Member validation via backend API
-* Large buttons and simplified UI for public use
-* Automatic reset after check-in
+To start the Metro dev server, run the following command from the root of your React Native project:
 
----
+```sh
+# Using npm
+npm start
 
-## 🧱 Tech Stack
-
-* **React Native**
-* JavaScript / TypeScript
-* REST API integration (FastAPI backend)
-* JWT Authentication
-* React Navigation
-* Fetch API
-
----
-
-## 📱 ScreenShot
-
-![앱 화면](screenshot/screenshot1.jpg)
-![앱 화면](screenshot/screenshot2.jpg)
-![앱 화면](screenshot/screenshot3.jpg)
-
----
-
-
-
-
-## 🚀 Getting Started
-
-아래는 개발 및 테스트 환경 기준 실행 방법입니다.
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/humake-dev/touch_app.git
-cd gym-checkin-kiosk
+# OR using Yarn
+yarn start
 ```
 
----
+## Step 2: Build and run your app
 
-### 2. Install dependencies
+With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
 
-```bash
-npm install
+### Android
+
+```sh
+# Using npm
+npm run android
+
+# OR using Yarn
+yarn android
 ```
 
-OR (또는)
+### iOS
 
-```bash
-yarn install
+For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+
+The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+
+```sh
+bundle install
 ```
 
----
+Then, and every time you update your native dependencies, run:
 
-### 3. Configure environment variables
-
-```bash
-cp .env.example .env
+```sh
+bundle exec pod install
 ```
 
-Backend API endpoint 및 키오스크 식별 정보를 설정하세요.
+For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
 
----
+```sh
+# Using npm
+npm run ios
 
-### 4. Run the app
-
-```bash
-npx react-native run-android
+# OR using Yarn
+yarn ios
 ```
 
-> 이 앱은 태블릿 환경을 기준으로 설계되었습니다.
+If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
----
+This is one way to run your app — you can also build it directly from Android Studio or Xcode.
 
-## 🔗 Backend Integration
+## Step 3: Modify your app
 
-⚠️ This React Native app **requires** the Gym Management API (FastAPI) to be running.<br>
-The app cannot function without the backend API.
+Now that you have successfully run the app, let's make changes!
 
-This app communicates with the Gym Management API (FastAPI) for all business logic:
+Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
 
-- Authentication and authorization
-- Membership info
+When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
 
-The backend API repository:
-- https://github.com/humake-dev/api
+- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
+- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
 
-⚠️ 이 앱은 Gym Management API (FastAPI)가 실행 중이어야 정상적으로 동작합니다.
+## Congratulations! :tada:
 
----
+You've successfully run and modified your React Native App. :partying_face:
 
-## 🛠️ Design Considerations
+### Now what?
 
-* Designed for **public, shared devices**
-* No persistent user session
-* Automatic screen reset for privacy
-* Minimal UI to reduce user error
+- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
+- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
----
+# Troubleshooting
 
-## 📄 License
+If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
-MIT License
+# Learn More
+
+To learn more about React Native, take a look at the following resources:
+
+- [React Native Website](https://reactnative.dev) - learn more about React Native.
+- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
+- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
+- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
+- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
